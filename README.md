@@ -29,7 +29,7 @@ from okta_jwt_verifier import JWTVerifier
 
 
 jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-result = verify_token({JWT})
+result = jwt_verifier.verify_token({JWT})
 print(result)
 ```
 
