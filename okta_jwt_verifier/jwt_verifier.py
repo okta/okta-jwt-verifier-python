@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from jose import jwt, jws
 
 from . import __version__ as version
+from .exceptions import JWKException
 
 
 class JWTVerifier():
@@ -46,20 +47,48 @@ class JWTVerifier():
         pass
 
     def verify_signature(self, token, kid):
-        jwks = self.get_jwks()
-        okta_jwk = None
-        for key in jwks['keys']:
-            if key['kid'] == kid:
-                okta_jwk = key
-
+        okta_jwk = self.get_jwk(kid)
         # Will raise an error if verification is failed
         return jws.verify(token, okta_jwk, algorithms=['RS256'])
 
     def verify_expiration(self):
         pass
 
+    def _get_jwk_by_kid(self, jwks, kid):
+        """Loop through given jwks and find jwk which matches by kid.
+
+        Return:
+            str if jwk match found, None - otherwise
+        """
+        okta_jwk = None
+        for key in jwks['keys']:
+            if key['kid'] == kid:
+                okta_jwk = key
+        return okta_jwk
+
+    def get_jwk(self, kid):
+        """Get JWK by kid.
+
+        If key not found, clear cache and retry again to support keys rollover.
+
+        Return:
+            str - represents JWK
+        Raise JWKException if key not found after retry.
+        """
+        jwks = self.get_jwks()
+        okta_jwk = self._get_jwk_by_kid(jwks, kid)
+
+        if not okta_jwk:
+            # retry logic
+            self._clear_requests_cache()
+            jwks = self.get_jwks()
+            okta_jwk = self._get_jwk_by_kid(jwks, kid)
+        if not okta_jwk:
+            raise JWKException('No matching JWK.')
+        return okta_jwk
+
     def get_jwks(self):
-        """Get jwks_uri from claims and download jwk.
+        """Get jwks_uri from claims and download jwks.
 
         version from okta_jwt_verifier.__init__.py
         """
@@ -89,3 +118,8 @@ class JWTVerifier():
         if '/oauth2/' not in jwks_uri_base:
             jwks_uri_base = urljoin(jwks_uri_base, 'oauth2/')
         return urljoin(jwks_uri_base, 'v1/keys')
+
+    def _clear_requests_cache(self):
+        """Remove all cached data from all adapters in cached session."""
+        for _, adapter in self.cached_sess.adapters.items():
+            adapter.cache.data = {}
