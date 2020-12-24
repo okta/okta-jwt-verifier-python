@@ -1,23 +1,19 @@
-import requests
-
-from cachecontrol import CacheControl
 from urllib.parse import urljoin
 from jose import jwt, jws
 
 from . import __version__ as version
 from .exceptions import JWKException
+from .request_executor import RequestExecutor
 
 
 class JWTVerifier():
 
-    def __init__(self, issuer, client_id, audience='api://default'):
+    def __init__(self, issuer, client_id, audience='api://default',
+                 request_executor=RequestExecutor()):
         self.issuer = issuer
         self.client_id = client_id
         self.audience = audience
-
-        # setup cached session
-        sess = requests.session()
-        self.cached_sess = CacheControl(sess)
+        self.request_executor = request_executor
 
     def verify_token(self, token):
         """
@@ -40,19 +36,20 @@ class JWTVerifier():
 
         # TODO: implement all needed methods, check out for correct algorithm
         headers = jwt.get_unverified_headers(token)
-        self.verify_signature(token, headers['kid'])
+        okta_jwk = self.get_jwk(headers['kid'])
+        self.verify_signature(token, okta_jwk)
+        decoded_token = self.decode_token(token, okta_jwk)
+        # TODO: investigate if we need to verify claims after decode,
+        # which inludes auto-verification
+        self.verify_claims(decoded_token)
         return True
 
-    def verify_claims(self):
+    def verify_claims(self, decode_token):
         pass
 
-    def verify_signature(self, token, kid):
-        okta_jwk = self.get_jwk(kid)
+    def verify_signature(self, token, okta_jwk):
         # Will raise an error if verification is failed
         return jws.verify(token, okta_jwk, algorithms=['RS256'])
-
-    def verify_expiration(self):
-        pass
 
     def _get_jwk_by_kid(self, jwks, kid):
         """Loop through given jwks and find jwk which matches by kid.
@@ -95,13 +92,15 @@ class JWTVerifier():
         jwks_uri = self._construct_jwks_uri()
         headers = {'User-Agent': f'okta-jwt-verifier-python/{version}',
                    'Content-Type': 'application/json'}
-        response = self.cached_sess.get(jwks_uri, headers=headers)
+        response = self.request_executor.get(jwks_uri, headers=headers)
         jwks = response.json()
         # TODO: make some jwks validation here?
         return jwks
 
     def decode_token(self, token, okta_jwk):
-        pass
+        """Method decode from python-jose automatically verify claims."""
+        return jwt.decode(token, okta_jwk, algorithms=['RS256'],
+                          audience=self.audience, issuer=self.issuer)
 
     def _construct_jwks_uri(self):
         """Construct URI for JWKs download.
@@ -120,6 +119,5 @@ class JWTVerifier():
         return urljoin(jwks_uri_base, 'v1/keys')
 
     def _clear_requests_cache(self):
-        """Remove all cached data from all adapters in cached session."""
-        for _, adapter in self.cached_sess.adapters.items():
-            adapter.cache.data = {}
+        """Clear whole cache."""
+        self.request_executor.clear_cache()

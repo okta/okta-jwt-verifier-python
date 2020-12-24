@@ -2,6 +2,7 @@ import pytest
 
 from okta_jwt_verifier import JWTVerifier
 from okta_jwt_verifier.exceptions import JWKException
+from okta_jwt_verifier.request_executor import RequestExecutor
 
 
 def test_construct_jwks_uri():
@@ -26,8 +27,6 @@ def test_construct_jwks_uri():
 
 
 def test_get_jwk(mocker):
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
-
     class MockJWKSResp():
         def __init__(self, resp):
             self.resp = resp
@@ -35,13 +34,20 @@ def test_get_jwk(mocker):
         def json(self):
             return self.resp
 
-    # check success flow
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'},
                           {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid2',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n2'}]}
-    jwt_verifier.cached_sess = mocker.Mock()
-    jwt_verifier.cached_sess.get = lambda *args, **kw: MockJWKSResp(jwks_resp)
+
+    request_executor = RequestExecutor()
+    request_executor.cached_sess = mocker.Mock()
+    request_executor.cached_sess.get = \
+        lambda *args, **kwargs: MockJWKSResp(jwks_resp)
+
+    # check success flow
+    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
+                               request_executor=request_executor)
+
     expected = {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                 'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}
     actual = jwt_verifier.get_jwk('test_kid')
@@ -54,8 +60,6 @@ def test_get_jwk(mocker):
 
 
 def test_get_jwks(mocker):
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
-
     class MockJWKSResp():
         def __init__(self, resp):
             self.resp = resp
@@ -65,8 +69,15 @@ def test_get_jwks(mocker):
 
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}]}
-    jwt_verifier.cached_sess = mocker.Mock()
-    jwt_verifier.cached_sess.get = lambda *args, **kw: MockJWKSResp(jwks_resp)
+
+    request_executor = RequestExecutor()
+    request_executor.cached_sess = mocker.Mock()
+    request_executor.cached_sess.get = \
+        lambda *args, **kwargs: MockJWKSResp(jwks_resp)
+
+    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
+                               request_executor=request_executor)
+
     actual = jwt_verifier.get_jwks()
     assert actual == jwks_resp
 
@@ -89,18 +100,11 @@ def test_get_jwk_by_kid():
 def test_verify_signature(mocker):
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
 
-    jwks = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
-                      'use': 'sig', 'e': 'AQAB', 'n': 'test_n'},
-                     {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid_2',
-                      'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}]}
-
-    jwt_verifier.get_jwks = lambda *args: jwks
     mock_sign_verifier = mocker.Mock()
     mocker.patch('okta_jwt_verifier.jwt_verifier.jws.verify',
                  mock_sign_verifier)
 
     token = 'test_token'
-    jwt_verifier.verify_signature(token, 'test_kid_2')
-    mock_sign_verifier.assert_called_with(token,
-                                          jwks['keys'][1],
-                                          algorithms=['RS256'])
+    jwk = 'test_jwk'
+    jwt_verifier.verify_signature(token, jwk)
+    mock_sign_verifier.assert_called_with(token, jwk, algorithms=['RS256'])
