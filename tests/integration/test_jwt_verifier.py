@@ -2,6 +2,7 @@ import os
 import pytest
 
 from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier.request_executor import RequestExecutor
 
 from tests.conftest import is_env_set
 
@@ -21,11 +22,13 @@ def test_verify_token():
 def test_clear_requests_cache():
     issuer = os.environ.get('ISSUER')
     client_id = os.environ.get('CLIENT_ID')
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    request_executor = RequestExecutor()
+    jwt_verifier = JWTVerifier(issuer, client_id,
+                               request_executor=request_executor)
     jwt_verifier.get_jwks()
 
     cache_data = []
-    for _, adapter in jwt_verifier.cached_sess.adapters.items():
+    for _, adapter in request_executor.cached_sess.adapters.items():
         if adapter.cache.data:
             cache_data.append(adapter.cache.data)
 
@@ -35,7 +38,7 @@ def test_clear_requests_cache():
     jwt_verifier._clear_requests_cache()
 
     cache_data = []
-    for _, adapter in jwt_verifier.cached_sess.adapters.items():
+    for _, adapter in request_executor.cached_sess.adapters.items():
         if adapter.cache.data:
             cache_data.append(adapter.cache.data)
 
