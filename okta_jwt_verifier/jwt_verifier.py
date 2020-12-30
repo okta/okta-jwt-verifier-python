@@ -8,12 +8,30 @@ from .request_executor import RequestExecutor
 
 class JWTVerifier():
 
-    def __init__(self, issuer, client_id, audience='api://default',
-                 request_executor=RequestExecutor()):
+    def __init__(self,
+                 issuer,
+                 client_id,
+                 audience='api://default',
+                 request_executor=RequestExecutor(),
+                 leeway=120,
+                 cache_jwks=True):
+        """
+        Issuer: string, full URI of the token issuer, required.
+
+        Leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
+                 Optional, default value: 2 minutes (120 seconds).
+
+        HTTP proxy configuration. Optional.
+        Number of times to retry a failed network request. Optional, default value: 1.
+        Default network timeout (in seconds). Optional, default value: 30.
+        Maximum number of requests allowed in 1 second (global request throttle). Optional, default value: 10.
+        Enable/disable caching of the JWKS. Optional, default true (cache the JWKS).
+        """
         self.issuer = issuer
         self.client_id = client_id
         self.audience = audience
         self.request_executor = request_executor
+        self.leeway = leeway
 
     def verify_token(self, token):
         """
@@ -100,7 +118,8 @@ class JWTVerifier():
     def decode_token(self, token, okta_jwk):
         """Method decode from python-jose automatically verify claims."""
         return jwt.decode(token, okta_jwk, algorithms=['RS256'],
-                          audience=self.audience, issuer=self.issuer)
+                          audience=self.audience, issuer=self.issuer,
+                          options={'leeway': self.leeway})
 
     def _construct_jwks_uri(self):
         """Construct URI for JWKs download.

@@ -39,7 +39,9 @@ def test_get_jwk(mocker):
                           {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid2',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n2'}]}
 
-    request_executor = RequestExecutor()
+    request_executor = RequestExecutor({'max_retries': 1,
+                                        'max_requests': 10,
+                                        'request_timeout': 30})
     request_executor.cached_sess = mocker.Mock()
     request_executor.cached_sess.get = \
         lambda *args, **kwargs: MockJWKSResp(jwks_resp)
@@ -70,7 +72,9 @@ def test_get_jwks(mocker):
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}]}
 
-    request_executor = RequestExecutor()
+    request_executor = RequestExecutor({'max_retries': 1,
+                                        'max_requests': 10,
+                                        'request_timeout': 30})
     request_executor.cached_sess = mocker.Mock()
     request_executor.cached_sess.get = \
         lambda *args, **kwargs: MockJWKSResp(jwks_resp)
