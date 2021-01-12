@@ -5,6 +5,14 @@ from okta_jwt_verifier.exceptions import JWKException
 from okta_jwt_verifier.request_executor import RequestExecutor
 
 
+class MockRequestExecutor(RequestExecutor):
+
+    response = {}
+
+    def get(self, uri, **params):
+        return MockRequestExecutor.response
+
+
 def test_construct_jwks_uri():
     # issuer without '/' at the end
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
@@ -27,24 +35,13 @@ def test_construct_jwks_uri():
 
 
 def test_get_jwk(mocker):
-    class MockJWKSResp():
-        def __init__(self, resp):
-            self.resp = resp
-
-        def json(self):
-            return self.resp
-
+    # mock response
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'},
                           {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid2',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n2'}]}
-
-    request_executor = RequestExecutor({'max_retries': 1,
-                                        'max_requests': 10,
-                                        'request_timeout': 30})
-    request_executor.cached_sess = mocker.Mock()
-    request_executor.cached_sess.get = \
-        lambda *args, **kwargs: MockJWKSResp(jwks_resp)
+    request_executor = MockRequestExecutor
+    request_executor.response = jwks_resp
 
     # check success flow
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
@@ -62,22 +59,11 @@ def test_get_jwk(mocker):
 
 
 def test_get_jwks(mocker):
-    class MockJWKSResp():
-        def __init__(self, resp):
-            self.resp = resp
-
-        def json(self):
-            return self.resp
-
+    # mock response
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}]}
-
-    request_executor = RequestExecutor({'max_retries': 1,
-                                        'max_requests': 10,
-                                        'request_timeout': 30})
-    request_executor.cached_sess = mocker.Mock()
-    request_executor.cached_sess.get = \
-        lambda *args, **kwargs: MockJWKSResp(jwks_resp)
+    request_executor = MockRequestExecutor
+    request_executor.response = jwks_resp
 
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
                                request_executor=request_executor)
