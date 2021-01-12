@@ -2,18 +2,46 @@ from urllib.parse import urljoin
 from jose import jwt, jws
 
 from . import __version__ as version
+from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT, LEEWAY
 from .exceptions import JWKException
 from .request_executor import RequestExecutor
 
 
 class JWTVerifier():
 
-    def __init__(self, issuer, client_id, audience='api://default',
-                 request_executor=RequestExecutor()):
+    def __init__(self,
+                 issuer,
+                 client_id,
+                 audience='api://default',
+                 request_executor=RequestExecutor,
+                 max_retries=MAX_RETRIES,
+                 request_timeout=REQUEST_TIMEOUT,
+                 max_requests=MAX_REQUESTS,
+                 leeway=LEEWAY,
+                 cache_jwks=True):
+        """
+        Args:
+            issuer: string, full URI of the token issuer, required
+            client_id: string, expected client_id, required
+            audience: string, expected audience, optional
+            request_executor: RequestExecutor class or its subclass, optional
+            max_retries: int, number of times to retry a failed network request, optional
+            request_timemout: int, max request timeout, optional
+            max_requests: int, max number of concurrent requests
+            leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
+            cache_jwks: bool, optional
+        """
         self.issuer = issuer
         self.client_id = client_id
         self.audience = audience
-        self.request_executor = request_executor
+        self.request_executor = request_executor(max_retries=max_retries,
+                                                 max_requests=max_requests,
+                                                 request_timeout=request_timeout)
+        self.max_retries = max_retries
+        self.request_timeout = request_timeout
+        self.max_requests = max_requests
+        self.leeway = leeway
+        self.cache_jwks = cache_jwks
 
     def verify_token(self, token):
         """
@@ -33,21 +61,15 @@ class JWTVerifier():
         https://github.com/okta/oss-technical-designs/blob/master/technical_designs/jwt-validation-libraries.md
         'iat' Issued At  - The time at which the JWT was issued.
         """
-
-        # TODO: implement all needed methods, check out for correct algorithm
         headers = jwt.get_unverified_headers(token)
         okta_jwk = self.get_jwk(headers['kid'])
         self.verify_signature(token, okta_jwk)
+        # method decode_token includes claims validation and token expiration
         decoded_token = self.decode_token(token, okta_jwk)
-        # TODO: investigate if we need to verify claims after decode,
-        # which inludes auto-verification
-        self.verify_claims(decoded_token)
         return True
 
-    def verify_claims(self, decode_token):
-        pass
-
     def verify_signature(self, token, okta_jwk):
+        """Verify token signature using received jwk."""
         # Will raise an error if verification is failed
         return jws.verify(token, okta_jwk, algorithms=['RS256'])
 
@@ -92,15 +114,16 @@ class JWTVerifier():
         jwks_uri = self._construct_jwks_uri()
         headers = {'User-Agent': f'okta-jwt-verifier-python/{version}',
                    'Content-Type': 'application/json'}
-        response = self.request_executor.get(jwks_uri, headers=headers)
-        jwks = response.json()
-        # TODO: make some jwks validation here?
+        jwks = self.request_executor.get(jwks_uri, headers=headers)
+        if not self.cache_jwks:
+            self._clear_requests_cache()
         return jwks
 
     def decode_token(self, token, okta_jwk):
         """Method decode from python-jose automatically verify claims."""
         return jwt.decode(token, okta_jwk, algorithms=['RS256'],
-                          audience=self.audience, issuer=self.issuer)
+                          audience=self.audience, issuer=self.issuer,
+                          options={'leeway': self.leeway})
 
     def _construct_jwks_uri(self):
         """Construct URI for JWKs download.

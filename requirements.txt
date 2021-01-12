@@ -1,3 +1,4 @@
 requests
 python-jose>=3.2.0
 cachecontrol>=0.12.6
+retry
