@@ -43,7 +43,7 @@ class JWTVerifier():
         self.leeway = leeway
         self.cache_jwks = cache_jwks
 
-    def verify_token(self, token):
+    async def verify_token(self, token):
         """
         Algorithm:
         1. Retrieve and parse your Okta JSON Web Keys (JWK),
@@ -62,7 +62,7 @@ class JWTVerifier():
         'iat' Issued At  - The time at which the JWT was issued.
         """
         headers = jwt.get_unverified_headers(token)
-        okta_jwk = self.get_jwk(headers['kid'])
+        okta_jwk = await self.get_jwk(headers['kid'])
         self.verify_signature(token, okta_jwk)
         # method decode_token includes claims validation and token expiration
         decoded_token = self.decode_token(token, okta_jwk)
@@ -85,7 +85,7 @@ class JWTVerifier():
                 okta_jwk = key
         return okta_jwk
 
-    def get_jwk(self, kid):
+    async def get_jwk(self, kid):
         """Get JWK by kid.
 
         If key not found, clear cache and retry again to support keys rollover.
@@ -94,19 +94,19 @@ class JWTVerifier():
             str - represents JWK
         Raise JWKException if key not found after retry.
         """
-        jwks = self.get_jwks()
+        jwks = await self.get_jwks()
         okta_jwk = self._get_jwk_by_kid(jwks, kid)
 
         if not okta_jwk:
             # retry logic
             self._clear_requests_cache()
-            jwks = self.get_jwks()
+            jwks = await self.get_jwks()
             okta_jwk = self._get_jwk_by_kid(jwks, kid)
         if not okta_jwk:
             raise JWKException('No matching JWK.')
         return okta_jwk
 
-    def get_jwks(self):
+    async def get_jwks(self):
         """Get jwks_uri from claims and download jwks.
 
         version from okta_jwt_verifier.__init__.py
@@ -114,7 +114,7 @@ class JWTVerifier():
         jwks_uri = self._construct_jwks_uri()
         headers = {'User-Agent': f'okta-jwt-verifier-python/{version}',
                    'Content-Type': 'application/json'}
-        jwks = self.request_executor.get(jwks_uri, headers=headers)
+        jwks = await self.request_executor.get(jwks_uri, headers=headers)
         if not self.cache_jwks:
             self._clear_requests_cache()
         return jwks

@@ -25,34 +25,52 @@ This library was built to keep configuration to a minimum. To get it running at 
 - **Audience** - By default `api://default`, can be found on Authorization Servers tab.
 
 ```py
+import asyncio
+
 from okta_jwt_verifier import JWTVerifier
 
 
-jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-result = jwt_verifier.verify_token({JWT})
-print(result)
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    result = jwt_verifier.verify_token({JWT})
+    print(result)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
 ```
 
 It is possible to verify only given list of claims:
 
 ```py
+import asyncio
+
 from okta_jwt_verifier import JWTVerifier
 
 
-claims_to_verify = ['aud', 'cid']
+asycn def main():
+    claims_to_verify = ['aud', 'cid']
 
-jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-result = jwt_verifier.verify_claims({JWT}, claims_to_verify)
-print(result)
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    result = jwt_verifier.verify_claims({JWT}, claims_to_verify)
+    print(result)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
 ```
 
 or token expiration only:
 
 ```py
+import asyncio
+
 from okta_jwt_verifier import JWTVerifier
 
 
-jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-result = jwt_verifier.verify_expiration({JWT})
-print(result)
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    result = jwt_verifier.verify_expiration({JWT})
+    print(result)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
 ```
