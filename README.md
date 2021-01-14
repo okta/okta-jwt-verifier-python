@@ -24,6 +24,8 @@ This library was built to keep configuration to a minimum. To get it running at 
 - **Client ID** - These can be found on the "General" tab of the Web application that you created earlier in the Okta Developer Console.
 - **Audience** - By default `api://default`, can be found on Authorization Servers tab.
 
+Following example will raise an JWTValidationException is JWT is invalid:
+
 ```py
 import asyncio
 
@@ -32,45 +34,76 @@ from okta_jwt_verifier import JWTVerifier
 
 async def main():
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    result = jwt_verifier.verify_token({JWT})
-    print(result)
+    await jwt_verifier.verify_access_token({JWT})
+    print('Token validated successfully.')
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 
-It is possible to verify only given list of claims:
+It is possible to verify signature if JWK is provided (no async requests):
+```py
+from okta_jwt_verifier import JWTVerifier
 
+
+def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier.verify_signature({JWT}, {JWK})
+
+
+main()
+```
+
+The following example shows how to receive JWK using async http request:
 ```py
 import asyncio
 
 from okta_jwt_verifier import JWTVerifier
 
 
-asycn def main():
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    headers, claims, signing_input, signature = jwt_verifier.parse_token({JWT})
+    okta_jwk = await self.get_jwk(headers['kid'])
+
+    # Then it can be used to verify_signature as in example above.
+    jwt_verifier.verify_signature({JWT}, okta_jwk)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+
+
+It is possible to verify only given list of claims (no async requests):
+
+```py
+from okta_jwt_verifier import JWTVerifier
+
+
+def main():
     claims_to_verify = ['aud', 'cid']
-
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    result = jwt_verifier.verify_claims({JWT}, claims_to_verify)
+    headers, claims, signing_input, signature = jwt_verifier.parse_token({JWT})
+    result = jwt_verifier.verify_claims(claims, claims_to_verify)
     print(result)
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+
+main()
 ```
 
-or token expiration only:
+or token expiration only (no async requests):
 
 ```py
-import asyncio
-
 from okta_jwt_verifier import JWTVerifier
 
 
-async def main():
+def main():
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    result = jwt_verifier.verify_expiration({JWT})
+    result = jwt_verifier.verify_expiration({JWT}, leeway=0)
     print(result)
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+
+main()
 ```

@@ -72,16 +72,21 @@ class JWTVerifier():
 
         Raise an Exception if any validation is failed, return None otherwise.
         """
-        headers, claims, signing_input, signature = self.parse_token(token)
-        if headers.get('alg') != 'RS256':
-            raise JWTValidationException('Header claim "alg" is invalid.')
+        try:
+            headers, claims, signing_input, signature = self.parse_token(token)
+            if headers.get('alg') != 'RS256':
+                raise JWTValidationException('Header claim "alg" is invalid.')
 
-        okta_jwk = await self.get_jwk(headers['kid'])
-        self.verify_signature(token, okta_jwk)
+            okta_jwk = await self.get_jwk(headers['kid'])
+            self.verify_signature(token, okta_jwk)
 
-        self.verify_claims(claims,
-                           claims_to_verify=claims_to_verify,
-                           leeway=self.leeway)
+            self.verify_claims(claims,
+                               claims_to_verify=claims_to_verify,
+                               leeway=self.leeway)
+        except JWTValidationException:
+            raise
+        except Exception as err:
+            raise JWTValidationException(str(err))
 
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
