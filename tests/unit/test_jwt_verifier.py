@@ -9,7 +9,7 @@ class MockRequestExecutor(RequestExecutor):
 
     response = {}
 
-    def get(self, uri, **params):
+    async def get(self, uri, **params):
         return MockRequestExecutor.response
 
 
@@ -34,7 +34,8 @@ def test_construct_jwks_uri():
     assert actual == expected
 
 
-def test_get_jwk(mocker):
+@pytest.mark.asyncio
+async def test_get_jwk(mocker):
     # mock response
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'},
@@ -49,16 +50,17 @@ def test_get_jwk(mocker):
 
     expected = {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                 'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}
-    actual = jwt_verifier.get_jwk('test_kid')
+    actual = await jwt_verifier.get_jwk('test_kid')
     assert actual == expected
 
     # check if exception raised in case no matching key
     jwt_verifier._clear_requests_cache = mocker.Mock()
     with pytest.raises(JWKException):
-        actual = jwt_verifier.get_jwk('test_kid_no_match')
+        actual = await jwt_verifier.get_jwk('test_kid_no_match')
 
 
-def test_get_jwks(mocker):
+@pytest.mark.asyncio
+async def test_get_jwks(mocker):
     # mock response
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'}]}
@@ -68,7 +70,7 @@ def test_get_jwks(mocker):
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
                                request_executor=request_executor)
 
-    actual = jwt_verifier.get_jwks()
+    actual = await jwt_verifier.get_jwks()
     assert actual == jwks_resp
 
 
