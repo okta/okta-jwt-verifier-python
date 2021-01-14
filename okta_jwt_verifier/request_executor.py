@@ -1,5 +1,4 @@
 """Module contains tools to perform http requests."""
-import requests
 import time
 
 from acachecontrol import AsyncCacheControl
@@ -16,8 +15,6 @@ class RequestExecutor:
                  max_requests=MAX_REQUESTS,
                  request_timeout=REQUEST_TIMEOUT,
                  cache_controller=AsyncCache()):
-        # setup cached session
-        sess = requests.session()
         self.cache = cache_controller
         self.max_retries = max_retries
         self.max_requests = max_requests
