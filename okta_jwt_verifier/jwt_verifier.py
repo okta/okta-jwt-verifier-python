@@ -121,14 +121,26 @@ class JWTVerifier():
                                leeway=self.leeway)
 
             # verify client_id and nonce
-            if claims['aud'] != self.client_id:
-                raise JWTValidationException('Client ID is invalid.')
+            self.verify_client_id(claims['aud'])
             if 'nonce' in claims and claims['nonce'] != nonce:
                 raise JWTValidationException('Claim "nonce" is invalid.')
         except JWTValidationException:
             raise
         except Exception as err:
             raise JWTValidationException(str(err))
+
+    def verify_client_id(self, aud):
+        """Verify client_id match aud or one of its elements."""
+        if isinstance(aud, str):
+            if aud != self.client_id:
+                raise JWTValidationException('Claim "aud" does not match Client ID.')
+        elif isinstance(aud, list):
+            for elem in aud:
+                if elem == self.client_id:
+                    return
+            raise JWTValidationException('Claim "aud" does not contain Client ID.')
+        else:
+            raise JWTValidationException('Claim "aud" has unsupported format.')
 
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
