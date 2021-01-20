@@ -88,6 +88,48 @@ class JWTVerifier():
         except Exception as err:
             raise JWTValidationException(str(err))
 
+    async def verify_id_token(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
+        """Verify id token.
+
+        Algorithm:
+        1. Retrieve and parse your Okta JSON Web Keys (JWK),
+           which should be checked periodically and cached by your application.
+        2. Decode the access token, which is in JSON Web Token format.
+        3. Verify the signature used to sign the access token.
+        4. Verify the claims found inside the access token.
+        5. Verify claim "cid" matches provided client_id.
+        6. If claim "nonce" was provided for token generation, it should be validated too.
+
+        Default claims to verify for id token:
+        'exp' Expiration - The time after which the token is invalid.
+        'iss' Issuer     - The principal that issued the JWT.
+        'aud' Audience   - The recipient that the JWT is intended for.
+                           For ID token 'aud' should match Client ID
+
+        Raise an Exception if any validation is failed, return None otherwise.
+        """
+        try:
+            headers, claims, signing_input, signature = self.parse_token(token)
+            if headers.get('alg') != 'RS256':
+                raise JWTValidationException('Header claim "alg" is invalid.')
+
+            okta_jwk = await self.get_jwk(headers['kid'])
+            self.verify_signature(token, okta_jwk)
+
+            self.verify_claims(claims,
+                               claims_to_verify=claims_to_verify,
+                               leeway=self.leeway)
+
+            # verify client_id and nonce
+            if claims['aud'] != self.client_id:
+                raise JWTValidationException('Client ID is invalid.')
+            if 'nonce' in claims and claims['nonce'] != nonce:
+                raise JWTValidationException('Claim "nonce" is invalid.')
+        except JWTValidationException:
+            raise
+        except Exception as err:
+            raise JWTValidationException(str(err))
+
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
         headers, claims, signing_input, signature = self.parse_token(token)
