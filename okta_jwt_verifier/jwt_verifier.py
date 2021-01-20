@@ -1,9 +1,11 @@
+import json
+
 from urllib.parse import urljoin
 from jose import jwt, jws
 
 from . import __version__ as version
 from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT, LEEWAY
-from .exceptions import JWKException
+from .exceptions import JWKException, JWTValidationException
 from .request_executor import RequestExecutor
 
 
@@ -43,8 +45,19 @@ class JWTVerifier():
         self.leeway = leeway
         self.cache_jwks = cache_jwks
 
-    async def verify_token(self, token):
+    def parse_token(self, token):
+        """Parse JWT token, get headers, claims and signature.
+
+        Return:
+            tuple (headers, claims, signing_input, signature)
         """
+        headers, payload, signing_input, signature = jws._load(token)
+        claims = json.loads(payload.decode('utf-8'))
+        return (headers, claims, signing_input, signature)
+
+    async def verify_access_token(self, token, claims_to_verify=('iss', 'aud', 'exp')):
+        """Verify acess token.
+
         Algorithm:
         1. Retrieve and parse your Okta JSON Web Keys (JWK),
            which should be checked periodically and cached by your application.
@@ -52,26 +65,57 @@ class JWTVerifier():
         3. Verify the signature used to sign the access token
         4. Verify the claims found inside the access token
 
-        Claims:
+        Default claims to verify for access token:
         'exp' Expiration - The time after which the token is invalid.
-        'nbf' Not Before - The time before which the token is invalid.
         'iss' Issuer     - The principal that issued the JWT.
         'aud' Audience   - The recipient that the JWT is intended for.
-        # should not be validated according to technical design:
-        https://github.com/okta/oss-technical-designs/blob/master/technical_designs/jwt-validation-libraries.md
-        'iat' Issued At  - The time at which the JWT was issued.
+
+        Raise an Exception if any validation is failed, return None otherwise.
         """
-        headers = jwt.get_unverified_headers(token)
-        okta_jwk = await self.get_jwk(headers['kid'])
-        self.verify_signature(token, okta_jwk)
-        # method decode_token includes claims validation and token expiration
-        decoded_token = self.decode_token(token, okta_jwk)
-        return True
+        try:
+            headers, claims, signing_input, signature = self.parse_token(token)
+            if headers.get('alg') != 'RS256':
+                raise JWTValidationException('Header claim "alg" is invalid.')
+
+            okta_jwk = await self.get_jwk(headers['kid'])
+            self.verify_signature(token, okta_jwk)
+
+            self.verify_claims(claims,
+                               claims_to_verify=claims_to_verify,
+                               leeway=self.leeway)
+        except JWTValidationException:
+            raise
+        except Exception as err:
+            raise JWTValidationException(str(err))
 
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
-        # Will raise an error if verification is failed
-        return jws.verify(token, okta_jwk, algorithms=['RS256'])
+        headers, claims, signing_input, signature = self.parse_token(token)
+        jws._verify_signature(signing_input=signing_input,
+                              header=headers,
+                              signature=signature,
+                              key=okta_jwk,
+                              algorithms=['RS256'])
+
+    def verify_claims(self, claims, claims_to_verify, leeway=LEEWAY):
+        # Overwrite defaults in python-jose library
+        options = {'verify_aud': 'aud' in claims_to_verify,
+                   'verify_iat': 'iat' in claims_to_verify,
+                   'verify_exp': 'exp' in claims_to_verify,
+                   'verify_nbf': 'nbf' in claims_to_verify,
+                   'verify_iss': 'iss' in claims_to_verify,
+                   'verify_sub': 'sub' in claims_to_verify,
+                   'verify_jti': 'jti' in claims_to_verify,
+                   'leeway': leeway}
+        jwt._validate_claims(claims,
+                             audience=self.audience,
+                             issuer=self.issuer,
+                             options=options)
+
+    def verify_expiration(self, token, leeway=LEEWAY):
+        """Verify if token is not expired."""
+        headers, claims, signing_input, signature = self.parse_token(token)
+        self.verify_claims(claims, claims_to_verify=('exp'), leeway=LEEWAY)
 
     def _get_jwk_by_kid(self, jwks, kid):
         """Loop through given jwks and find jwk which matches by kid.
@@ -118,12 +162,6 @@ class JWTVerifier():
         if not self.cache_jwks:
             self._clear_requests_cache()
         return jwks
-
-    def decode_token(self, token, okta_jwk):
-        """Method decode from python-jose automatically verify claims."""
-        return jwt.decode(token, okta_jwk, algorithms=['RS256'],
-                          audience=self.audience, issuer=self.issuer,
-                          options={'leeway': self.leeway})
 
     def _construct_jwks_uri(self):
         """Construct URI for JWKs download.

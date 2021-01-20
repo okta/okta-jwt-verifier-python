@@ -90,13 +90,22 @@ def test_get_jwk_by_kid():
 
 
 def test_verify_signature(mocker):
+    headers = {'alg': 'RS256', 'kid': 'test_kid'}
+    claims = {'test_claim_name': 'test_claim_value'}
+    signing_input = 'test_signing_input'
+    signature = 'test_signature'
     jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
+    jwt_verifier.parse_token = lambda token: (headers, claims, signing_input, signature)
 
     mock_sign_verifier = mocker.Mock()
-    mocker.patch('okta_jwt_verifier.jwt_verifier.jws.verify',
+    mocker.patch('okta_jwt_verifier.jwt_verifier.jws._verify_signature',
                  mock_sign_verifier)
 
     token = 'test_token'
     jwk = 'test_jwk'
     jwt_verifier.verify_signature(token, jwk)
-    mock_sign_verifier.assert_called_with(token, jwk, algorithms=['RS256'])
+    mock_sign_verifier.assert_called_with(signing_input=signing_input,
+                                          header=headers,
+                                          signature=signature,
+                                          key=jwk,
+                                          algorithms=['RS256'])

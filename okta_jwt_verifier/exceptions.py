@@ -4,3 +4,7 @@ class OktaJWTBaseException(Exception):
 
 class JWKException(OktaJWTBaseException):
     pass
+
+
+class JWTValidationException(OktaJWTBaseException):
+    pass
