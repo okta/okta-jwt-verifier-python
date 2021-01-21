@@ -12,12 +12,24 @@ from tests.conftest import is_env_set
 @pytest.mark.skipif(not is_env_set(),
                     reason='Set env variables for integration tests')
 @pytest.mark.asyncio
-async def test_verify_token():
+async def test_verify_access_token():
     issuer = os.environ.get('ISSUER')
     client_id = os.environ.get('CLIENT_ID')
     token = os.environ.get('OKTA_JWT')
     jwt_verifier = JWTVerifier(issuer, client_id)
     await jwt_verifier.verify_access_token(token)
+
+
+@pytest.mark.skipif(not is_env_set(),
+                    reason='Set env variables for integration tests')
+@pytest.mark.asyncio
+async def test_verify_id_token():
+    issuer = os.environ.get('ISSUER')
+    client_id = os.environ.get('CLIENT_ID')
+    token = os.environ.get('OKTA_JWT')
+    nonce = os.environ.get('NONCE')
+    jwt_verifier = JWTVerifier(issuer, client_id)
+    await jwt_verifier.verify_id_token(token, nonce=nonce)
 
 
 @pytest.mark.skipif(not is_env_set(),

@@ -1,7 +1,7 @@
 import pytest
 
 from okta_jwt_verifier import JWTVerifier
-from okta_jwt_verifier.exceptions import JWKException
+from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
 from okta_jwt_verifier.request_executor import RequestExecutor
 
 
@@ -109,3 +109,31 @@ def test_verify_signature(mocker):
                                           signature=signature,
                                           key=jwk,
                                           algorithms=['RS256'])
+
+
+def test_verify_client_id():
+    """Check if method verify_client_id works correctly."""
+    # verify when aud is a string
+    client_id = 'test_client_id'
+    aud = client_id
+    jwt_verifier = JWTVerifier('https://test_issuer.com', client_id)
+    jwt_verifier.verify_client_id(aud)
+
+    # verify when aud is an array
+    aud = ['test_audience', client_id]
+    jwt_verifier.verify_client_id(aud)
+
+    # verify exception is raised when aud is a string
+    with pytest.raises(JWTValidationException):
+        aud = 'bad_aud'
+        jwt_verifier.verify_client_id(aud)
+
+    # verify exception is raised when aud is an array
+    with pytest.raises(JWTValidationException):
+        aud = ['bad_aud']
+        jwt_verifier.verify_client_id(aud)
+
+    # verify exception is raised when aud is not a string or array
+    with pytest.raises(JWTValidationException):
+        aud = {'aud': 'bad_aud'}
+        jwt_verifier.verify_client_id(aud)
