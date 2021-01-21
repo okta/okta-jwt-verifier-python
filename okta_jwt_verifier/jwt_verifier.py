@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 from jose import jwt, jws
 
 from . import __version__ as version
+from .config_validator import ConfigValidator
 from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT, LEEWAY
 from .exceptions import JWKException, JWTValidationException
 from .request_executor import RequestExecutor
@@ -33,6 +34,17 @@ class JWTVerifier():
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
+        # validate input data before any processing
+        config = {'issuer': issuer,
+                  'client_id': client_id,
+                  'audience': audience,
+                  'max_retries': max_retries,
+                  'request_timeout': request_timeout,
+                  'max_requests': max_requests,
+                  'leeway': leeway,
+                  'cache_jwks': cache_jwks}
+        ConfigValidator(config).validate_config()
+
         self.issuer = issuer
         self.client_id = client_id
         self.audience = audience
