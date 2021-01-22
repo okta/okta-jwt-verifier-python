@@ -8,3 +8,7 @@ class JWKException(OktaJWTBaseException):
 
 class JWTValidationException(OktaJWTBaseException):
     pass
+
+
+class JWTInvalidConfigException(OktaJWTBaseException):
+    pass
