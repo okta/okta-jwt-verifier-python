@@ -13,7 +13,7 @@ def get_version():
 
 
 setup(
-    name="okta-jwt-verifier-python",
+    name="okta_jwt_verifier",
     version=get_version(),
     author="Okta, Inc.",
     author_email="devex@okta.com",
