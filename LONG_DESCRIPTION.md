@@ -1,5 +1,5 @@
-Okta SDK Python
-===============
+Okta JWT Verifier
+=================
 
 A Python library for OKTA JWT tokens validation
 

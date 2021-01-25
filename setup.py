@@ -19,7 +19,7 @@ setup(
     author_email="devex@okta.com",
     url="https://github.com/okta/okta-jwt-verifier-python",
     license="Apache License 2.0",
-    description="Python SDK for the Okta Management API",
+    description="Okta JWT Verifier",
     long_description=open("LONG_DESCRIPTION.md").read(),
     test_suite="tests",
     packages=find_packages(exclude=("tests",)),
