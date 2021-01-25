@@ -48,7 +48,7 @@ This library was built to keep configuration to a minimum. To get it running at 
 - **Client ID** - These can be found on the "General" tab of the Web application that you created earlier in the Okta Developer Console.
 - **Audience** - By default `api://default`, can be found on Authorization Servers tab.
 
-Following example will raise an JWTValidationException is JWT is invalid, verify Access Token:
+Following example will raise an JWTValidationException if Access Token is invalid:
 
 ```py
 import asyncio
