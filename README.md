@@ -5,18 +5,42 @@
 
 # Okta JWT Verifier for Python
 
+- [Release Status](#release-status)
+- [Need help?](#need-help)
+- [Getting Started](#getting-started)
+- [Usage Guide](#usage-guide)
+- [Exceptions](#exceptions)
+- [Contributing](#contributing)
+
 This library helps you verify tokens that have been issued by Okta. To learn more about verification cases and Okta's tokens please read [Working With OAuth 2.0 Tokens](https://developer.okta.com/authentication-guide/tokens/)
 
 > Requires Python version 3.6.0 or higher.
 
-## Installation
+## Release status
+
+This library uses semantic versioning and follows Okta's [Library Version Policy][okta-library-versioning].
+
+| Version | Status                           |
+| ------- | -------------------------------- |
+| 0.x     | :warning: Beta Release (Retired) |
+| 1.x     | :heavy_check_mark: Release       |
+
+The latest release can always be found on the [releases page][github-releases].
+
+## Need help?
+
+If you run into problems using the SDK, you can
+
+- Ask questions on the [Okta Developer Forums][devforum]
+- Post [issues on GitHub][github-issues] (for code errors)
+
+## Getting started
+
+To install Okta JWT Verifier Python:
+
 ```sh
 pip install okta-jwt-verifier
 ```
-
-> Note: currently, there is nothing to install, library is under development
-
-## Usage
 
 This library was built to keep configuration to a minimum. To get it running at its most basic form, all you need to provide is the the following information:
 
@@ -24,7 +48,7 @@ This library was built to keep configuration to a minimum. To get it running at 
 - **Client ID** - These can be found on the "General" tab of the Web application that you created earlier in the Okta Developer Console.
 - **Audience** - By default `api://default`, can be found on Authorization Servers tab.
 
-Following example will raise an JWTValidationException is JWT is invalid:
+Following example will raise an JWTValidationException if Access Token is invalid:
 
 ```py
 import asyncio
@@ -34,13 +58,35 @@ from okta_jwt_verifier import JWTVerifier
 
 async def main():
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    await jwt_verifier.verify_access_token({JWT})
+    await jwt_verifier.verify_access_token('{JWT}')
     print('Token validated successfully.')
 
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
+
+## Usage guide
+
+These examples will help you understand how to use this library.
+
+Verify ID Token:
+```py
+import asyncio
+
+from okta_jwt_verifier import JWTVerifier
+
+
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    await jwt_verifier.verify_id_token('{JWT}', nonce='{NONCE}')
+    print('Token validated successfully.')
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+> Note: parameter `nonce` is optional and required only if token was generated with nonce.
 
 It is possible to verify signature if JWK is provided (no async requests):
 ```py
@@ -49,7 +95,7 @@ from okta_jwt_verifier import JWTVerifier
 
 def main():
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    jwt_verifier.verify_signature({JWT}, {JWK})
+    jwt_verifier.verify_signature('{JWT}', {JWK})
 
 
 main()
@@ -68,7 +114,7 @@ async def main():
     okta_jwk = await self.get_jwk(headers['kid'])
 
     # Then it can be used to verify_signature as in example above.
-    jwt_verifier.verify_signature({JWT}, okta_jwk)
+    jwt_verifier.verify_signature('{JWT}', okta_jwk)
 
 
 loop = asyncio.get_event_loop()
@@ -83,11 +129,10 @@ from okta_jwt_verifier import JWTVerifier
 
 
 def main():
-    claims_to_verify = ['aud', 'cid']
+    claims_to_verify = ['aud', 'iss']
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     headers, claims, signing_input, signature = jwt_verifier.parse_token({JWT})
-    result = jwt_verifier.verify_claims(claims, claims_to_verify)
-    print(result)
+    jwt_verifier.verify_claims(claims, claims_to_verify)
 
 
 main()
@@ -101,9 +146,90 @@ from okta_jwt_verifier import JWTVerifier
 
 def main():
     jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
-    result = jwt_verifier.verify_expiration({JWT}, leeway=0)
-    print(result)
+    jwt_verifier.verify_expiration('{JWT}', leeway=0)
 
 
 main()
 ```
+
+## Exceptions
+
+If token is invalid (malformed, expired, etc.), verifier will raise an exception `JWTValidationException`:
+
+```py
+import asyncio
+
+from okta_jwt_verifier import JWTVerifier
+
+
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    await jwt_verifier.verify_access_token(access_token)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+Output (part of traceback removed for simplicity):
+```sh
+Traceback (most recent call last):
+...
+okta_jwt_verifier.exceptions.JWTValidationException: Signature has expired.
+```
+
+If configuration provided is invalid, verifier will raise an exception `JWTInvalidConfigException`:
+```py
+import asyncio
+
+from okta_jwt_verifier import JWTVerifier
+
+
+async def main():
+    jwt_verifier = JWTVerifier('malformed_issuer.com', '{CLIENT_ID}', 'api://default')
+    await jwt_verifier.verify_access_token(access_token)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+Output (part of traceback removed for simplicity):
+```sh
+Traceback (most recent call last):
+...
+okta_jwt_verifier.exceptions.JWTInvalidConfigException: Your Okta URL must start with 'https'.
+```
+
+If JWK is invalid, verifier will raise an exception `JWKException`:
+```py
+import asyncio
+
+from okta_jwt_verifier import JWTVerifier
+
+
+async def main():
+    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    await jwt_verifier.verify_access_token(access_token)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+Output (part of traceback removed for simplicity):
+```sh
+Traceback (most recent call last):
+...
+okta_jwt_verifier.exceptions.JWKException: No matching JWK.
+```
+
+## Contributing
+
+We're happy to accept contributions and PRs! Please see the [Contribution Guide](CONTRIBUTING.md) to understand how to structure a contribution.
+
+[devforum]: https://devforum.okta.com/
+[github-issues]: https://github.com/okta/okta-jwt-verifier-python/issues
+[github-releases]: https://github.com/okta/okta-jwt-verifier-python/releases
+[okta developer forum]: https://devforum.okta.com/
+[lang-landing-page]: https://developer.okta.com/code/python/
+[okta-library-versioning]: https://developer.okta.com/code/library-versions/
+[dev-okta-signup]: https://developer.okta.com/signup
+[python-docs]: https://docs.python.org/3/library/asyncio.html
