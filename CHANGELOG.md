@@ -1,4 +1,4 @@
 # OKTA JWT Verifier Changelog
 
-## v0.0.1
-- Add project skeleton
+## v0.1.0
+- Initial release
