@@ -164,6 +164,12 @@ class JWTVerifier():
                               algorithms=['RS256'])
 
     def verify_claims(self, claims, claims_to_verify, leeway=LEEWAY):
+        """Verify claims are present and valid."""
+        # Check if required claims are present, because library "jose" doesn't raise an exception
+        for claim in claims_to_verify:
+            if claim not in claims:
+                raise JWTValidationException(f'Required claim "{claim}" is not present.')
+
         # Overwrite defaults in python-jose library
         options = {'verify_aud': 'aud' in claims_to_verify,
                    'verify_iat': 'iat' in claims_to_verify,
@@ -173,6 +179,7 @@ class JWTVerifier():
                    'verify_sub': 'sub' in claims_to_verify,
                    'verify_jti': 'jti' in claims_to_verify,
                    'leeway': leeway}
+        # Validate claims
         jwt._validate_claims(claims,
                              audience=self.audience,
                              issuer=self.issuer,
