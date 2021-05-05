@@ -1,4 +1,7 @@
 import pytest
+import time
+
+from jose.exceptions import JWTClaimsError
 
 from okta_jwt_verifier import JWTVerifier
 from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
@@ -137,3 +140,69 @@ def test_verify_client_id():
     with pytest.raises(JWTValidationException):
         aud = {'aud': 'bad_aud'}
         jwt_verifier.verify_client_id(aud)
+
+
+def test_verify_claims():
+    """Check if method verify_claims works correctly."""
+    client_id = 'test_client_id'
+    audience = 'api://default'
+    issuer = 'https://test_issuer.com'
+    iss_time = time.time()
+
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': issuer,
+              'aud': audience,
+              'iat': iss_time,
+              'exp': iss_time+300,
+              'cid': client_id,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    # verify when aud is a string
+    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
+
+
+def test_verify_claims_invalid():
+    """Check if method verify_claims raises an exception if any claim is invalid."""
+    client_id = 'test_client_id'
+    audience = 'api://default'
+    issuer = 'https://test_issuer.com'
+    iss_time = time.time()
+
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': 'https://invalid_issuer.com',
+              'aud': audience,
+              'iat': iss_time,
+              'exp': iss_time+300,
+              'cid': client_id,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    # verify when aud is a string
+    jwt_verifier = JWTVerifier(issuer, client_id)
+    with pytest.raises(JWTClaimsError):
+        jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
+
+
+def test_verify_claims_missing_claim():
+    """Check if method verify_claims raises an exception if required claim is missing."""
+    client_id = 'test_client_id'
+    issuer = 'https://test_issuer.com'
+    iss_time = time.time()
+
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': issuer,
+              'iat': iss_time,
+              'exp': iss_time+300,
+              'cid': client_id,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    # verify when aud is a string
+    jwt_verifier = JWTVerifier(issuer, client_id)
+    with pytest.raises(JWTValidationException):
+        jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
