@@ -56,7 +56,7 @@ from okta_jwt_verifier import JWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = JWTVerifier(issuer='{ISSUER}', audience='api://default')
     await jwt_verifier.verify_access_token('{JWT}')
     print('Token validated successfully.')
 
@@ -105,23 +105,6 @@ loop.run_until_complete(main())
 ```
 
 Verify Access Token
-```py
-import asyncio
-
-from okta_jwt_verifier import JWTVerifier
-
-
-async def main():
-    jwt_verifier = JWTVerifier(issuer='{ISSUER}', audience='api://default')
-    await jwt_verifier.verify_id_token('{JWT}')
-    print('Token validated successfully.')
-
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
-```
-
-Another option - use class dedicated to Access tokens verification:
 ```py
 import asyncio
 
