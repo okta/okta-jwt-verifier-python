@@ -13,8 +13,8 @@ from .request_executor import RequestExecutor
 class JWTVerifier():
 
     def __init__(self,
-                 issuer,
-                 client_id,
+                 issuer=None,
+                 client_id='client_id_stub',
                  audience='api://default',
                  request_executor=RequestExecutor,
                  max_retries=MAX_RETRIES,
@@ -255,3 +255,75 @@ class JWTVerifier():
     def _clear_requests_cache(self):
         """Clear whole cache."""
         self.request_executor.clear_cache()
+
+
+class AccessTokenVerifier():
+    def __init__(self,
+                 issuer=None,
+                 audience='api://default',
+                 request_executor=RequestExecutor,
+                 max_retries=MAX_RETRIES,
+                 request_timeout=REQUEST_TIMEOUT,
+                 max_requests=MAX_REQUESTS,
+                 leeway=LEEWAY,
+                 cache_jwks=True):
+        """
+        Args:
+            issuer: string, full URI of the token issuer, required
+            audience: string, expected audience, optional
+            request_executor: RequestExecutor class or its subclass, optional
+            max_retries: int, number of times to retry a failed network request, optional
+            request_timemout: int, max request timeout, optional
+            max_requests: int, max number of concurrent requests
+            leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
+            cache_jwks: bool, optional
+        """
+        self._jwt_verifier = JWTVerifier(issuer,
+                                         'client_id_stub',
+                                         audience,
+                                         request_executor,
+                                         max_retries,
+                                         request_timeout,
+                                         max_requests,
+                                         leeway,
+                                         cache_jwks)
+
+    async def verify(self, token, claims_to_verify=('iss', 'aud', 'exp')):
+        await self._jwt_verifier.verify_access_token(token, claims_to_verify)
+
+
+class IDTokenVerifier():
+    def __init__(self,
+                 issuer=None,
+                 client_id='client_id_stub',
+                 audience='api://default',
+                 request_executor=RequestExecutor,
+                 max_retries=MAX_RETRIES,
+                 request_timeout=REQUEST_TIMEOUT,
+                 max_requests=MAX_REQUESTS,
+                 leeway=LEEWAY,
+                 cache_jwks=True):
+        """
+        Args:
+            issuer: string, full URI of the token issuer, required
+            client_id: string, expected client_id, required
+            audience: string, expected audience, optional
+            request_executor: RequestExecutor class or its subclass, optional
+            max_retries: int, number of times to retry a failed network request, optional
+            request_timemout: int, max request timeout, optional
+            max_requests: int, max number of concurrent requests
+            leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
+            cache_jwks: bool, optional
+        """
+        self._jwt_verifier = JWTVerifier(issuer,
+                                         client_id,
+                                         audience,
+                                         request_executor,
+                                         max_retries,
+                                         request_timeout,
+                                         max_requests,
+                                         leeway,
+                                         cache_jwks)
+
+    async def verify(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
+        await self._jwt_verifier.verify_id_token(token, claims_to_verify, nonce)
