@@ -1,12 +1,12 @@
-import json
+import warnings
 
 from urllib.parse import urljoin
-from jose import jwt, jws
 
 from . import __version__ as version
 from .config_validator import ConfigValidator
 from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT, LEEWAY
 from .exceptions import JWKException, JWTValidationException
+from .jwt_utils import JWTUtils
 from .request_executor import RequestExecutor
 
 
@@ -34,6 +34,10 @@ class JWTVerifier():
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
+        warnings.simplefilter('module')
+        warnings.warn('JWTVerifier will be deprecated soon. '
+                      'For token verification use IDTokenVerifier or AccessTokenVerifier. '
+                      'For different jwt utils use JWTUtils.', DeprecationWarning)
         # validate input data before any processing
         config = {'issuer': issuer,
                   'client_id': client_id,
@@ -63,9 +67,7 @@ class JWTVerifier():
         Return:
             tuple (headers, claims, signing_input, signature)
         """
-        headers, payload, signing_input, signature = jws._load(token)
-        claims = json.loads(payload.decode('utf-8'))
-        return (headers, claims, signing_input, signature)
+        return JWTUtils.parse_token(token)
 
     async def verify_access_token(self, token, claims_to_verify=('iss', 'aud', 'exp')):
         """Verify acess token.
@@ -156,39 +158,19 @@ class JWTVerifier():
 
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
-        headers, claims, signing_input, signature = self.parse_token(token)
-        jws._verify_signature(signing_input=signing_input,
-                              header=headers,
-                              signature=signature,
-                              key=okta_jwk,
-                              algorithms=['RS256'])
+        JWTUtils.verify_signature(token, okta_jwk)
 
     def verify_claims(self, claims, claims_to_verify, leeway=LEEWAY):
         """Verify claims are present and valid."""
-        # Check if required claims are present, because library "jose" doesn't raise an exception
-        for claim in claims_to_verify:
-            if claim not in claims:
-                raise JWTValidationException(f'Required claim "{claim}" is not present.')
-
-        # Overwrite defaults in python-jose library
-        options = {'verify_aud': 'aud' in claims_to_verify,
-                   'verify_iat': 'iat' in claims_to_verify,
-                   'verify_exp': 'exp' in claims_to_verify,
-                   'verify_nbf': 'nbf' in claims_to_verify,
-                   'verify_iss': 'iss' in claims_to_verify,
-                   'verify_sub': 'sub' in claims_to_verify,
-                   'verify_jti': 'jti' in claims_to_verify,
-                   'leeway': leeway}
-        # Validate claims
-        jwt._validate_claims(claims,
-                             audience=self.audience,
-                             issuer=self.issuer,
-                             options=options)
+        JWTUtils.verify_claims(claims,
+                               claims_to_verify,
+                               self.audience,
+                               self.issuer,
+                               leeway)
 
     def verify_expiration(self, token, leeway=LEEWAY):
         """Verify if token is not expired."""
-        headers, claims, signing_input, signature = self.parse_token(token)
-        self.verify_claims(claims, claims_to_verify=('exp'), leeway=LEEWAY)
+        JWTUtils.verify_expiration(token, leeway)
 
     def _get_jwk_by_kid(self, jwks, kid):
         """Loop through given jwks and find jwk which matches by kid.

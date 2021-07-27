@@ -97,15 +97,16 @@ def test_verify_signature(mocker):
     claims = {'test_claim_name': 'test_claim_value'}
     signing_input = 'test_signing_input'
     signature = 'test_signature'
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
-    jwt_verifier.parse_token = lambda token: (headers, claims, signing_input, signature)
+    mock_parse_token = lambda token: (headers, claims, signing_input, signature)
+    mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
 
     mock_sign_verifier = mocker.Mock()
-    mocker.patch('okta_jwt_verifier.jwt_verifier.jws._verify_signature',
+    mocker.patch('okta_jwt_verifier.jwt_utils.jws._verify_signature',
                  mock_sign_verifier)
 
     token = 'test_token'
     jwk = 'test_jwk'
+    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
     jwt_verifier.verify_signature(token, jwk)
     mock_sign_verifier.assert_called_with(signing_input=signing_input,
                                           header=headers,
