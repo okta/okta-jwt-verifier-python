@@ -14,12 +14,14 @@ class RequestExecutor:
                  max_retries=MAX_RETRIES,
                  max_requests=MAX_REQUESTS,
                  request_timeout=REQUEST_TIMEOUT,
-                 cache_controller=AsyncCache()):
+                 cache_controller=AsyncCache(),
+                 proxy=None):
         self.cache = cache_controller
         self.max_retries = max_retries
         self.max_requests = max_requests
         self.request_timeout = request_timeout
         self.requests_count = 0
+        self.proxy = proxy
 
     async def fire_request(self, uri, **params):
         """Perform http(s) request within AsyncCacheControl session.
@@ -36,12 +38,16 @@ class RequestExecutor:
 
         Return response in json-format.
         """
+        request_params = {'headers': params.get('headers')}
+        if self.proxy:
+            request_params['proxy'] = self.proxy
+
         while self.requests_count >= self.max_requests:
             time.sleep(0.1)
         self.requests_count += 1
         response = retry_call(self.fire_request,
                               fargs=(uri,),
-                              fkwargs={'headers': params.get('headers')},
+                              fkwargs=request_params,
                               tries=self.max_retries)
         self.requests_count -= 1
         return response
