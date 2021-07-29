@@ -1,0 +1,18 @@
+# IDE generated files
+.vscode/
+
+# Python generated files
+__pycache__/
+*.pyc
+.pytest_cache
+
+# Packaging generated files
+*.egg-info
+build/
+dist/
+
+# Tox
+.tox
+
+# Code coverage
+.coverage
