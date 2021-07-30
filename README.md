@@ -185,6 +185,18 @@ def main():
 main()
 ```
 
+v 0.2.0 allows to work via proxy:
+```py
+# JWTVerifier will be deprecated soon
+jwt_verifier = JWTVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+
+# The same for AccessTokenVerifier
+jwt_verifier = AccessTokenVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+
+# or IDTokenVerifier
+jwt_verifier = IDTokenVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+```
+
 ## Exceptions
 
 If token is invalid (malformed, expired, etc.), verifier will raise an exception `JWTValidationException`:
