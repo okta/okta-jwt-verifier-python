@@ -21,7 +21,8 @@ class JWTVerifier():
                  request_timeout=REQUEST_TIMEOUT,
                  max_requests=MAX_REQUESTS,
                  leeway=LEEWAY,
-                 cache_jwks=True):
+                 cache_jwks=True,
+                 proxy=None):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -54,7 +55,8 @@ class JWTVerifier():
         self.audience = audience
         self.request_executor = request_executor(max_retries=max_retries,
                                                  max_requests=max_requests,
-                                                 request_timeout=request_timeout)
+                                                 request_timeout=request_timeout,
+                                                 proxy=proxy)
         self.max_retries = max_retries
         self.request_timeout = request_timeout
         self.max_requests = max_requests
@@ -248,7 +250,8 @@ class AccessTokenVerifier():
                  request_timeout=REQUEST_TIMEOUT,
                  max_requests=MAX_REQUESTS,
                  leeway=LEEWAY,
-                 cache_jwks=True):
+                 cache_jwks=True,
+                 proxy=None):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -268,7 +271,8 @@ class AccessTokenVerifier():
                                          request_timeout,
                                          max_requests,
                                          leeway,
-                                         cache_jwks)
+                                         cache_jwks,
+                                         proxy)
 
     async def verify(self, token, claims_to_verify=('iss', 'aud', 'exp')):
         await self._jwt_verifier.verify_access_token(token, claims_to_verify)
@@ -284,7 +288,8 @@ class IDTokenVerifier():
                  request_timeout=REQUEST_TIMEOUT,
                  max_requests=MAX_REQUESTS,
                  leeway=LEEWAY,
-                 cache_jwks=True):
+                 cache_jwks=True,
+                 proxy=None):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -305,7 +310,8 @@ class IDTokenVerifier():
                                          request_timeout,
                                          max_requests,
                                          leeway,
-                                         cache_jwks)
+                                         cache_jwks,
+                                         proxy)
 
     async def verify(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
         await self._jwt_verifier.verify_id_token(token, claims_to_verify, nonce)
