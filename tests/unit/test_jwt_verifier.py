@@ -3,7 +3,7 @@ import time
 
 from jose.exceptions import JWTClaimsError
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import JWTVerifier, AccessTokenVerifier, IDTokenVerifier
 from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
 from okta_jwt_verifier.request_executor import RequestExecutor
 
@@ -97,15 +97,16 @@ def test_verify_signature(mocker):
     claims = {'test_claim_name': 'test_claim_value'}
     signing_input = 'test_signing_input'
     signature = 'test_signature'
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
-    jwt_verifier.parse_token = lambda token: (headers, claims, signing_input, signature)
+    mock_parse_token = lambda token: (headers, claims, signing_input, signature)
+    mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
 
     mock_sign_verifier = mocker.Mock()
-    mocker.patch('okta_jwt_verifier.jwt_verifier.jws._verify_signature',
+    mocker.patch('okta_jwt_verifier.jwt_utils.jws._verify_signature',
                  mock_sign_verifier)
 
     token = 'test_token'
     jwk = 'test_jwk'
+    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
     jwt_verifier.verify_signature(token, jwk)
     mock_sign_verifier.assert_called_with(signing_input=signing_input,
                                           header=headers,
@@ -206,3 +207,34 @@ def test_verify_claims_missing_claim():
     jwt_verifier = JWTVerifier(issuer, client_id)
     with pytest.raises(JWTValidationException):
         jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
+
+
+@pytest.mark.asyncio
+async def test_access_token_verifier(monkeypatch, mocker):
+    """Verify AccessTokenVerifier calls correct method of JWTVerifier with correct parameters."""
+    class AsyncMock(mocker.MagicMock):
+        async def __call__(self, *args, **kwargs):
+            return super().__call__(self, *args, **kwargs)
+
+    mock_verify_access_token = AsyncMock()
+    monkeypatch.setattr(JWTVerifier, 'verify_access_token', mock_verify_access_token)
+    issuer = 'https://test_issuer.com'
+    jwt_verifier = AccessTokenVerifier(issuer)
+    await jwt_verifier.verify('test_token')
+    mock_verify_access_token.assert_called_with(mock_verify_access_token, 'test_token', ('iss', 'aud', 'exp'))
+
+
+@pytest.mark.asyncio
+async def test_id_token_verifier(monkeypatch, mocker):
+    """Verify IDTokenVerifier calls correct method of JWTVerifier with correct parameters."""
+    class AsyncMock(mocker.MagicMock):
+        async def __call__(self, *args, **kwargs):
+            return super().__call__(self, *args, **kwargs)
+
+    mock_verify_id_token = AsyncMock()
+    monkeypatch.setattr(JWTVerifier, 'verify_id_token', mock_verify_id_token)
+    issuer = 'https://test_issuer.com'
+    client_id = 'test_client_id'
+    jwt_verifier = IDTokenVerifier(issuer, client_id)
+    await jwt_verifier.verify('test_token')
+    mock_verify_id_token.assert_called_with(mock_verify_id_token, 'test_token', ('iss', 'exp'), None)

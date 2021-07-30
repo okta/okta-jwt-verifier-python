@@ -35,3 +35,7 @@ publish\:test:
 
 publish\:prod:
 	python3 -m twine upload dist/*
+
+test:
+	@echo "Run unittests"
+	pytest tests/unit/

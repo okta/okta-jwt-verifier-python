@@ -56,7 +56,7 @@ from okta_jwt_verifier import JWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = JWTVerifier(issuer='{ISSUER}', audience='api://default')
     await jwt_verifier.verify_access_token('{JWT}')
     print('Token validated successfully.')
 
@@ -77,7 +77,7 @@ from okta_jwt_verifier import JWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = JWTVerifier(issuer='{ISSUER}', client_id='{CLIENT_ID}', audience='api://default')
     await jwt_verifier.verify_id_token('{JWT}', nonce='{NONCE}')
     print('Token validated successfully.')
 
@@ -86,6 +86,40 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 > Note: parameter `nonce` is optional and required only if token was generated with nonce.
+
+Another option - use class dedicated to ID tokens verification:
+```py
+import asyncio
+
+from okta_jwt_verifier import IDTokenVerifier
+
+
+async def main():
+    jwt_verifier = IDTokenVerifier(issuer='{ISSUER}', client_id='{CLIENT_ID}', audience='api://default')
+    await jwt_verifier.verify('{JWT}', nonce='{NONCE}')
+    print('Token validated successfully.')
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
+
+Verify Access Token
+```py
+import asyncio
+
+from okta_jwt_verifier import AccessTokenVerifier
+
+
+async def main():
+    jwt_verifier = AccessTokenVerifier(issuer='{ISSUER}', audience='api://default')
+    await jwt_verifier.verify('{JWT}')
+    print('Token validated successfully.')
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+```
 
 It is possible to verify signature if JWK is provided (no async requests):
 ```py
@@ -149,6 +183,18 @@ def main():
 
 
 main()
+```
+
+v 0.2.0 allows to work via proxy:
+```py
+# JWTVerifier will be deprecated soon
+jwt_verifier = JWTVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+
+# The same for AccessTokenVerifier
+jwt_verifier = AccessTokenVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+
+# or IDTokenVerifier
+jwt_verifier = IDTokenVerifier(issuer='{ISSUER}', proxy='{PROXY}')
 ```
 
 ## Exceptions
