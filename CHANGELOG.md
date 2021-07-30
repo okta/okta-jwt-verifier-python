@@ -2,7 +2,7 @@
 
 ## v0.2.0
 - Add classes IDTokenVerifier and AccessTokenVerifier
-- Add DeprecationWarning to not use JWTVerifier class
+- Mark JWTVerifier class as deprecated. This class will be removed in the next major version. 
 - Add proxy support
 - Update README
 - Few codebase improvements
