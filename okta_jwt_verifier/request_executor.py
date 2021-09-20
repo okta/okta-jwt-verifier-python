@@ -38,7 +38,8 @@ class RequestExecutor:
 
         Return response in json-format.
         """
-        request_params = {'headers': params.get('headers')}
+        request_params = {'headers': params.get('headers'),
+                          'timeout': self.request_timeout}
         if self.proxy:
             request_params['proxy'] = self.proxy
 
