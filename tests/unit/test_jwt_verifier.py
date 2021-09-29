@@ -238,3 +238,38 @@ async def test_id_token_verifier(monkeypatch, mocker):
     jwt_verifier = IDTokenVerifier(issuer, client_id)
     await jwt_verifier.verify('test_token')
     mock_verify_id_token.assert_called_with(mock_verify_id_token, 'test_token', ('iss', 'exp'), None)
+
+
+def test_verify_expiration(mocker):
+    # verify token is not expired
+    headers = {'alg': 'RS256', 'kid': 'test_kid'}
+    issuer = 'https://test_issuer.com'
+    iss_time = time.time()
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': issuer,
+              'iat': iss_time,
+              'exp': iss_time+300,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    signing_input = 'test_signing_input'
+    signature = 'test_signature'
+
+    mock_parse_token = lambda token: (headers, claims, signing_input, signature)
+    mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
+
+    jwt_verifier = JWTVerifier(issuer)
+    jwt_verifier.verify_expiration('test_token')
+
+    # verify token is expired
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': issuer,
+              'iat': iss_time,
+              'exp': iss_time-300,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    with pytest.raises(JWTValidationException):
+        jwt_verifier.verify_expiration('test_token')
