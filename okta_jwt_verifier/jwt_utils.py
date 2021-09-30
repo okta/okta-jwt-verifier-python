@@ -1,6 +1,7 @@
 import json
 
 from jose import jwt, jws
+from jose.exceptions import ExpiredSignatureError
 
 from .constants import LEEWAY
 from .exceptions import JWTValidationException
@@ -61,4 +62,11 @@ class JWTUtils:
     def verify_expiration(token, leeway=LEEWAY):
         """Verify if token is not expired."""
         headers, claims, signing_input, signature = JWTUtils.parse_token(token)
-        JWTUtils.verify_claims(claims, claims_to_verify=('exp'), leeway=LEEWAY)
+        try:
+            JWTUtils.verify_claims(claims,
+                                   claims_to_verify=('exp',),
+                                   audience=None,
+                                   issuer=None,
+                                   leeway=LEEWAY)
+        except ExpiredSignatureError:
+            raise JWTValidationException('Signature has expired.')
