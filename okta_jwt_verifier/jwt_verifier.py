@@ -10,7 +10,7 @@ from .jwt_utils import JWTUtils
 from .request_executor import RequestExecutor
 
 
-class JWTVerifier():
+class BaseJWTVerifier():
 
     def __init__(self,
                  issuer=None,
@@ -30,15 +30,11 @@ class JWTVerifier():
             audience: string, expected audience, optional
             request_executor: RequestExecutor class or its subclass, optional
             max_retries: int, number of times to retry a failed network request, optional
-            request_timemout: int, max request timeout, optional
+            request_timeout: int, max request timeout, optional
             max_requests: int, max number of concurrent requests
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        warnings.simplefilter('module')
-        warnings.warn('JWTVerifier will be deprecated soon. '
-                      'For token verification use IDTokenVerifier or AccessTokenVerifier. '
-                      'For different jwt utils use JWTUtils.', DeprecationWarning)
         # validate input data before any processing
         config = {'issuer': issuer,
                   'client_id': client_id,
@@ -241,7 +237,48 @@ class JWTVerifier():
         self.request_executor.clear_cache()
 
 
-class AccessTokenVerifier():
+class JWTVerifier(BaseJWTVerifier):
+
+    def __init__(self,
+                 issuer=None,
+                 client_id='client_id_stub',
+                 audience='api://default',
+                 request_executor=RequestExecutor,
+                 max_retries=MAX_RETRIES,
+                 request_timeout=REQUEST_TIMEOUT,
+                 max_requests=MAX_REQUESTS,
+                 leeway=LEEWAY,
+                 cache_jwks=True,
+                 proxy=None):
+        """
+        Args:
+            issuer: string, full URI of the token issuer, required
+            client_id: string, expected client_id, required
+            audience: string, expected audience, optional
+            request_executor: RequestExecutor class or its subclass, optional
+            max_retries: int, number of times to retry a failed network request, optional
+            request_timeout: int, max request timeout, optional
+            max_requests: int, max number of concurrent requests
+            leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
+            cache_jwks: bool, optional
+        """
+        warnings.simplefilter('module')
+        warnings.warn('JWTVerifier will be deprecated soon. '
+                      'For token verification use IDTokenVerifier or AccessTokenVerifier. '
+                      'For different jwt utils use JWTUtils.', DeprecationWarning)
+        super().__init__(issuer=issuer,
+                         client_id=client_id,
+                         audience=audience,
+                         request_executor=request_executor,
+                         max_retries=max_retries,
+                         request_timeout=request_timeout,
+                         max_requests=max_requests,
+                         leeway=leeway,
+                         cache_jwks=cache_jwks,
+                         proxy=proxy)
+
+
+class AccessTokenVerifier(BaseJWTVerifier):
     def __init__(self,
                  issuer=None,
                  audience='api://default',
@@ -258,21 +295,21 @@ class AccessTokenVerifier():
             audience: string, expected audience, optional
             request_executor: RequestExecutor class or its subclass, optional
             max_retries: int, number of times to retry a failed network request, optional
-            request_timemout: int, max request timeout, optional
+            request_timeout: int, max request timeout, optional
             max_requests: int, max number of concurrent requests
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        self._jwt_verifier = JWTVerifier(issuer,
-                                         'client_id_stub',
-                                         audience,
-                                         request_executor,
-                                         max_retries,
-                                         request_timeout,
-                                         max_requests,
-                                         leeway,
-                                         cache_jwks,
-                                         proxy)
+        self._jwt_verifier = BaseJWTVerifier(issuer=issuer,
+                                             client_id='client_id_stub',
+                                             audience=audience,
+                                             request_executor=request_executor,
+                                             max_retries=max_retries,
+                                             request_timeout=request_timeout,
+                                             max_requests=max_requests,
+                                             leeway=leeway,
+                                             cache_jwks=cache_jwks,
+                                             proxy=proxy)
 
     async def verify(self, token, claims_to_verify=('iss', 'aud', 'exp')):
         await self._jwt_verifier.verify_access_token(token, claims_to_verify)
@@ -297,7 +334,7 @@ class IDTokenVerifier():
             audience: string, expected audience, optional
             request_executor: RequestExecutor class or its subclass, optional
             max_retries: int, number of times to retry a failed network request, optional
-            request_timemout: int, max request timeout, optional
+            request_timeout: int, max request timeout, optional
             max_requests: int, max number of concurrent requests
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional

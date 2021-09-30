@@ -1,5 +1,5 @@
 import pytest
-from okta_jwt_verifier import JWTVerifier, __version__ as version
+from okta_jwt_verifier import BaseJWTVerifier, __version__ as version
 
 
 @pytest.mark.asyncio
@@ -9,7 +9,7 @@ async def test_proxy(mocker):
             return super().__call__(self, *args, **kwargs)
 
     issuer = 'https://test_issuer.com'
-    jwt_verifier = JWTVerifier(issuer)
+    jwt_verifier = BaseJWTVerifier(issuer)
 
     mock_fire_request = AsyncMock()
     jwt_verifier.request_executor.fire_request = mock_fire_request
@@ -20,7 +20,7 @@ async def test_proxy(mocker):
                                          headers={'User-Agent': f'okta-jwt-verifier-python/{version}',
                                                   'Content-Type': 'application/json'})
 
-    jwt_verifier = JWTVerifier(issuer, proxy='http://test_proxy.com')
+    jwt_verifier = BaseJWTVerifier(issuer, proxy='http://test_proxy.com')
     jwt_verifier.request_executor.fire_request = mock_fire_request
     await jwt_verifier.get_jwks()
 

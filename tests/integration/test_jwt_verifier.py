@@ -3,7 +3,7 @@ import pytest
 
 from acachecontrol.cache import AsyncCache
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 from okta_jwt_verifier.request_executor import RequestExecutor
 
 from tests.conftest import is_env_set
@@ -16,7 +16,7 @@ async def test_verify_access_token():
     issuer = os.environ.get('ISSUER')
     client_id = os.environ.get('CLIENT_ID')
     token = os.environ.get('OKTA_ACCESS_TOKEN')
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier = BaseJWTVerifier(issuer, client_id)
     await jwt_verifier.verify_access_token(token)
 
 
@@ -28,7 +28,7 @@ async def test_verify_id_token():
     client_id = os.environ.get('CLIENT_ID')
     token = os.environ.get('OKTA_ID_TOKEN')
     nonce = os.environ.get('NONCE')
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier = BaseJWTVerifier(issuer, client_id)
     await jwt_verifier.verify_id_token(token, nonce=nonce)
 
 
@@ -44,7 +44,7 @@ async def test_clear_requests_cache():
 
     issuer = os.environ.get('ISSUER')
     client_id = os.environ.get('CLIENT_ID')
-    jwt_verifier = JWTVerifier(issuer, client_id,
+    jwt_verifier = BaseJWTVerifier(issuer, client_id,
                                request_executor=MockRequestExecutor)
     await jwt_verifier.get_jwks()
 
