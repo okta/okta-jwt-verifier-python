@@ -52,11 +52,11 @@ Following example will raise an JWTValidationException if Access Token is invali
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier(issuer='{ISSUER}', audience='api://default')
+    jwt_verifier = BaseJWTVerifier(issuer='{ISSUER}', audience='api://default')
     await jwt_verifier.verify_access_token('{JWT}')
     print('Token validated successfully.')
 
@@ -73,11 +73,11 @@ Verify ID Token:
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier(issuer='{ISSUER}', client_id='{CLIENT_ID}', audience='api://default')
+    jwt_verifier = BaseJWTVerifier(issuer='{ISSUER}', client_id='{CLIENT_ID}', audience='api://default')
     await jwt_verifier.verify_id_token('{JWT}', nonce='{NONCE}')
     print('Token validated successfully.')
 
@@ -123,11 +123,11 @@ loop.run_until_complete(main())
 
 It is possible to verify signature if JWK is provided (no async requests):
 ```py
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     jwt_verifier.verify_signature('{JWT}', {JWK})
 
 
@@ -138,11 +138,11 @@ The following example shows how to receive JWK using async http request:
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     headers, claims, signing_input, signature = jwt_verifier.parse_token({JWT})
     okta_jwk = await self.get_jwk(headers['kid'])
 
@@ -158,12 +158,12 @@ loop.run_until_complete(main())
 It is possible to verify only given list of claims (no async requests):
 
 ```py
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 def main():
     claims_to_verify = ['aud', 'iss']
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     headers, claims, signing_input, signature = jwt_verifier.parse_token({JWT})
     jwt_verifier.verify_claims(claims, claims_to_verify)
 
@@ -174,11 +174,11 @@ main()
 or token expiration only (no async requests):
 
 ```py
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     jwt_verifier.verify_expiration('{JWT}', leeway=0)
 
 
@@ -187,8 +187,8 @@ main()
 
 v 0.2.0 allows to work via proxy:
 ```py
-# JWTVerifier will be deprecated soon
-jwt_verifier = JWTVerifier(issuer='{ISSUER}', proxy='{PROXY}')
+# BaseJWTVerifier will be deprecated soon
+jwt_verifier = BaseJWTVerifier(issuer='{ISSUER}', proxy='{PROXY}')
 
 # The same for AccessTokenVerifier
 jwt_verifier = AccessTokenVerifier(issuer='{ISSUER}', proxy='{PROXY}')
@@ -204,11 +204,11 @@ If token is invalid (malformed, expired, etc.), verifier will raise an exception
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     await jwt_verifier.verify_access_token(access_token)
 
 
@@ -226,11 +226,11 @@ If configuration provided is invalid, verifier will raise an exception `JWTInval
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('malformed_issuer.com', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('malformed_issuer.com', '{CLIENT_ID}', 'api://default')
     await jwt_verifier.verify_access_token(access_token)
 
 
@@ -248,11 +248,11 @@ If JWK is invalid, verifier will raise an exception `JWKException`:
 ```py
 import asyncio
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 
 
 async def main():
-    jwt_verifier = JWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
+    jwt_verifier = BaseJWTVerifier('{ISSUER}', '{CLIENT_ID}', 'api://default')
     await jwt_verifier.verify_access_token(access_token)
 
 
