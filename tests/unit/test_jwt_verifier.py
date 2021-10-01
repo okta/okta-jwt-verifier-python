@@ -3,7 +3,7 @@ import time
 
 from jose.exceptions import JWTClaimsError
 
-from okta_jwt_verifier import JWTVerifier, AccessTokenVerifier, IDTokenVerifier
+from okta_jwt_verifier import BaseJWTVerifier, JWTVerifier, AccessTokenVerifier, IDTokenVerifier
 from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
 from okta_jwt_verifier.request_executor import RequestExecutor
 
@@ -18,19 +18,19 @@ class MockRequestExecutor(RequestExecutor):
 
 def test_construct_jwks_uri():
     # issuer without '/' at the end
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id')
     actual = jwt_verifier._construct_jwks_uri()
     expected = 'https://test_issuer.com/oauth2/v1/keys'
     assert actual == expected
 
     # issuer with '/' at the end
-    jwt_verifier = JWTVerifier('https://test_issuer.com/', 'test_client_id')
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com/', 'test_client_id')
     actual = jwt_verifier._construct_jwks_uri()
     expected = 'https://test_issuer.com/oauth2/v1/keys'
     assert actual == expected
 
     # issuer with /oauth2/ in URI
-    jwt_verifier = JWTVerifier('https://test_issuer.com/oauth2/',
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com/oauth2/',
                                'test_client_id')
     actual = jwt_verifier._construct_jwks_uri()
     expected = 'https://test_issuer.com/oauth2/v1/keys'
@@ -48,7 +48,7 @@ async def test_get_jwk(mocker):
     request_executor.response = jwks_resp
 
     # check success flow
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id',
                                request_executor=request_executor)
 
     expected = {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
@@ -70,7 +70,7 @@ async def test_get_jwks(mocker):
     request_executor = MockRequestExecutor
     request_executor.response = jwks_resp
 
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id',
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id',
                                request_executor=request_executor)
 
     actual = await jwt_verifier.get_jwks()
@@ -78,7 +78,7 @@ async def test_get_jwks(mocker):
 
 
 def test_get_jwk_by_kid():
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id')
     jwks_resp = {'keys': [{'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid',
                            'use': 'sig', 'e': 'AQAB', 'n': 'test_n'},
                           {'kty': 'RSA', 'alg': 'RS256', 'kid': 'test_kid2',
@@ -106,7 +106,7 @@ def test_verify_signature(mocker):
 
     token = 'test_token'
     jwk = 'test_jwk'
-    jwt_verifier = JWTVerifier('https://test_issuer.com', 'test_client_id')
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id')
     jwt_verifier.verify_signature(token, jwk)
     mock_sign_verifier.assert_called_with(signing_input=signing_input,
                                           header=headers,
@@ -120,7 +120,7 @@ def test_verify_client_id():
     # verify when aud is a string
     client_id = 'test_client_id'
     aud = client_id
-    jwt_verifier = JWTVerifier('https://test_issuer.com', client_id)
+    jwt_verifier = BaseJWTVerifier('https://test_issuer.com', client_id)
     jwt_verifier.verify_client_id(aud)
 
     # verify when aud is an array
@@ -161,7 +161,7 @@ def test_verify_claims():
               'scp': ['openid'],
               'sub': 'test_jwt@okta.com'}
     # verify when aud is a string
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier = BaseJWTVerifier(issuer, client_id)
     jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
 
 
@@ -183,7 +183,7 @@ def test_verify_claims_invalid():
               'scp': ['openid'],
               'sub': 'test_jwt@okta.com'}
     # verify when aud is a string
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier = BaseJWTVerifier(issuer, client_id)
     with pytest.raises(JWTClaimsError):
         jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
 
@@ -204,20 +204,20 @@ def test_verify_claims_missing_claim():
               'scp': ['openid'],
               'sub': 'test_jwt@okta.com'}
     # verify when aud is a string
-    jwt_verifier = JWTVerifier(issuer, client_id)
+    jwt_verifier = BaseJWTVerifier(issuer, client_id)
     with pytest.raises(JWTValidationException):
         jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
 
 
 @pytest.mark.asyncio
 async def test_access_token_verifier(monkeypatch, mocker):
-    """Verify AccessTokenVerifier calls correct method of JWTVerifier with correct parameters."""
+    """Verify AccessTokenVerifier calls correct method of BaseJWTVerifier with correct parameters."""
     class AsyncMock(mocker.MagicMock):
         async def __call__(self, *args, **kwargs):
             return super().__call__(self, *args, **kwargs)
 
     mock_verify_access_token = AsyncMock()
-    monkeypatch.setattr(JWTVerifier, 'verify_access_token', mock_verify_access_token)
+    monkeypatch.setattr(BaseJWTVerifier, 'verify_access_token', mock_verify_access_token)
     issuer = 'https://test_issuer.com'
     jwt_verifier = AccessTokenVerifier(issuer)
     await jwt_verifier.verify('test_token')
@@ -226,13 +226,13 @@ async def test_access_token_verifier(monkeypatch, mocker):
 
 @pytest.mark.asyncio
 async def test_id_token_verifier(monkeypatch, mocker):
-    """Verify IDTokenVerifier calls correct method of JWTVerifier with correct parameters."""
+    """Verify IDTokenVerifier calls correct method of BaseJWTVerifier with correct parameters."""
     class AsyncMock(mocker.MagicMock):
         async def __call__(self, *args, **kwargs):
             return super().__call__(self, *args, **kwargs)
 
     mock_verify_id_token = AsyncMock()
-    monkeypatch.setattr(JWTVerifier, 'verify_id_token', mock_verify_id_token)
+    monkeypatch.setattr(BaseJWTVerifier, 'verify_id_token', mock_verify_id_token)
     issuer = 'https://test_issuer.com'
     client_id = 'test_client_id'
     jwt_verifier = IDTokenVerifier(issuer, client_id)
@@ -259,7 +259,7 @@ def test_verify_expiration(mocker):
     mock_parse_token = lambda token: (headers, claims, signing_input, signature)
     mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
 
-    jwt_verifier = JWTVerifier(issuer)
+    jwt_verifier = BaseJWTVerifier(issuer)
     jwt_verifier.verify_expiration('test_token')
 
     # verify token is expired
@@ -273,3 +273,8 @@ def test_verify_expiration(mocker):
               'sub': 'test_jwt@okta.com'}
     with pytest.raises(JWTValidationException):
         jwt_verifier.verify_expiration('test_token')
+
+
+def test_deprecation_warning():
+    with pytest.warns(DeprecationWarning):
+        jwt_verifier = JWTVerifier(issuer='https://test_issuer.com')

@@ -1,7 +1,7 @@
 import copy
 import pytest
 
-from okta_jwt_verifier import JWTVerifier
+from okta_jwt_verifier import BaseJWTVerifier
 from okta_jwt_verifier.config_validator import ConfigValidator
 from okta_jwt_verifier.exceptions import JWTInvalidConfigException
 from okta_jwt_verifier.error_messages import (ERROR_MESSAGE_ORG_URL_MISSING,
@@ -28,11 +28,11 @@ BASIC_CONFIG = {'issuer': 'https://test_issuer.com',
 
 def test_jwt_verifier_init():
     # should not raise an error
-    JWTVerifier('https://test_issuer.com', 'test_client_id')
+    BaseJWTVerifier('https://test_issuer.com', 'test_client_id')
 
     # should raise an error
     with pytest.raises(JWTInvalidConfigException):
-        JWTVerifier('test_issuer.com', 'test_client_id')
+        BaseJWTVerifier('test_issuer.com', 'test_client_id')
 
 
 def test_validate_issuer():
