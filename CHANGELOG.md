@@ -1,8 +1,13 @@
 # OKTA JWT Verifier Changelog
 
+## v0.2.1
+- Fix passing timeout parameter to cached session, issue #22
+- Fix verify_expiration method, issue #24
+- Remove deprecation warning from IDTokenVerifier and AccessTokenVerifier classes by separating JWTVerifier class
+
 ## v0.2.0
 - Add classes IDTokenVerifier and AccessTokenVerifier
-- Mark JWTVerifier class as deprecated. This class will be removed in the next major version. 
+- Mark JWTVerifier class as deprecated. This class will be removed in the next major version.
 - Add proxy support
 - Update README
 - Few codebase improvements
