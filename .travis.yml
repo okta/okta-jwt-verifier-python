@@ -4,10 +4,13 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
+  - "3.10"
 
 install:
   - pip install -U -r requirements.txt
   - pip install -U -r test_requirements.txt
+  - pip install flake8
 
 script:
   - echo "Running tests in job stages..."
@@ -28,4 +31,4 @@ jobs:
       name: "Flake8 Check"
       script:
         - echo "Code Style check..."
-        - "flake8 okta_jwt_verifier/"
+        - "flake8 --extend-ignore=E501 okta/"
