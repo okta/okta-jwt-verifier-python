@@ -278,7 +278,7 @@ class JWTVerifier(BaseJWTVerifier):
                          proxy=proxy)
 
 
-class AccessTokenVerifier(BaseJWTVerifier):
+class AccessTokenVerifier():
     def __init__(self,
                  issuer=None,
                  audience='api://default',
@@ -339,16 +339,16 @@ class IDTokenVerifier():
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        self._jwt_verifier = JWTVerifier(issuer,
-                                         client_id,
-                                         audience,
-                                         request_executor,
-                                         max_retries,
-                                         request_timeout,
-                                         max_requests,
-                                         leeway,
-                                         cache_jwks,
-                                         proxy)
+        self._jwt_verifier = BaseJWTVerifier(issuer,
+                                             client_id,
+                                             audience,
+                                             request_executor,
+                                             max_retries,
+                                             request_timeout,
+                                             max_requests,
+                                             leeway,
+                                             cache_jwks,
+                                             proxy)
 
     async def verify(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
         await self._jwt_verifier.verify_id_token(token, claims_to_verify, nonce)
