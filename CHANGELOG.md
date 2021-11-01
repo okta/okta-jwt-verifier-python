@@ -1,5 +1,8 @@
 # OKTA JWT Verifier Changelog
 
+## v0.2.2
+- Remove deprecation warning from IDTokenVerifier, add missing fix in v0.2.1
+
 ## v0.2.1
 - Fix passing timeout parameter to cached session, issue #22
 - Fix verify_expiration method, issue #24
