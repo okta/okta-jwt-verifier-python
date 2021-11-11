@@ -1,5 +1,8 @@
 # OKTA JWT Verifier Changelog
 
+## v0.2.3
+- Verify claims before signature, issue #34
+
 ## v0.2.2
 - Remove deprecation warning from IDTokenVerifier, add missing fix in v0.2.1
 
