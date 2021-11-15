@@ -278,3 +278,24 @@ def test_verify_expiration(mocker):
 def test_deprecation_warning():
     with pytest.warns(DeprecationWarning):
         jwt_verifier = JWTVerifier(issuer='https://test_issuer.com')
+
+
+def test_no_deprecation_warning():
+    # there is no nice way to check it, so use workaround with try/except/else
+    try:
+        with pytest.warns(DeprecationWarning):
+            jwt_verifier = AccessTokenVerifier(issuer='https://test_issuer.com')
+    except:
+        # this means "no deprecation warning"
+        assert True
+    else:
+        assert False
+
+    try:
+        with pytest.warns(DeprecationWarning):
+            jwt_verifier = IDTokenVerifier(issuer='https://test_issuer.com')
+    except:
+        # this means "no deprecation warning"
+        assert True
+    else:
+        assert False
