@@ -89,12 +89,12 @@ class BaseJWTVerifier():
             if headers.get('alg') != 'RS256':
                 raise JWTValidationException('Header claim "alg" is invalid.')
 
-            okta_jwk = await self.get_jwk(headers['kid'])
-            self.verify_signature(token, okta_jwk)
-
             self.verify_claims(claims,
                                claims_to_verify=claims_to_verify,
                                leeway=self.leeway)
+
+            okta_jwk = await self.get_jwk(headers['kid'])
+            self.verify_signature(token, okta_jwk)
         except JWTValidationException:
             raise
         except Exception as err:
@@ -125,12 +125,12 @@ class BaseJWTVerifier():
             if headers.get('alg') != 'RS256':
                 raise JWTValidationException('Header claim "alg" is invalid.')
 
-            okta_jwk = await self.get_jwk(headers['kid'])
-            self.verify_signature(token, okta_jwk)
-
             self.verify_claims(claims,
                                claims_to_verify=claims_to_verify,
                                leeway=self.leeway)
+
+            okta_jwk = await self.get_jwk(headers['kid'])
+            self.verify_signature(token, okta_jwk)
 
             # verify client_id and nonce
             self.verify_client_id(claims['aud'])
