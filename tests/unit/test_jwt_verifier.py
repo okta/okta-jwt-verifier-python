@@ -188,6 +188,36 @@ def test_verify_claims_invalid():
         jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
 
 
+@pytest.mark.asyncio
+async def test_invalid_claims_fail_first(mocker):
+    """Check if claims are invalid, exception is raised and no network call is needed."""
+    client_id = 'test_client_id'
+    audience = 'api://default'
+    headers = {'alg': 'RS256', 'kid': 'test_kid'}
+    iss_time = time.time()
+    claims = {'ver': 1,
+              'jti': 'test_jti_str',
+              'iss': 'https://test_issuer.com',
+              'aud': audience,
+              'iat': iss_time,
+              'exp': iss_time+300,
+              'cid': client_id,
+              'uid': 'test_uid',
+              'scp': ['openid'],
+              'sub': 'test_jwt@okta.com'}
+    signing_input = 'test_signing_input'
+    signature = 'test_signature'
+    mock_parse_token = lambda token: (headers, claims, signing_input, signature)
+    mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
+
+    token = 'test_token'
+    issuer = 'https://invalid_issuer.com'
+    jwt_verifier = AccessTokenVerifier(issuer)
+    with pytest.raises(JWTValidationException) as err:
+        await jwt_verifier.verify(token)
+    assert str(err.value) == 'Invalid issuer'
+
+
 def test_verify_claims_missing_claim():
     """Check if method verify_claims raises an exception if required claim is missing."""
     client_id = 'test_client_id'
