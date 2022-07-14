@@ -1,28 +1,28 @@
 import warnings
-
 from urllib.parse import urljoin
 
 from . import __version__ as version
 from .config_validator import ConfigValidator
-from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT, LEEWAY
+from .constants import LEEWAY, MAX_REQUESTS, MAX_RETRIES, REQUEST_TIMEOUT
 from .exceptions import JWKException, JWTValidationException
 from .jwt_utils import JWTUtils
 from .request_executor import RequestExecutor
 
 
-class BaseJWTVerifier():
-
-    def __init__(self,
-                 issuer=None,
-                 client_id='client_id_stub',
-                 audience='api://default',
-                 request_executor=RequestExecutor,
-                 max_retries=MAX_RETRIES,
-                 request_timeout=REQUEST_TIMEOUT,
-                 max_requests=MAX_REQUESTS,
-                 leeway=LEEWAY,
-                 cache_jwks=True,
-                 proxy=None):
+class BaseJWTVerifier:
+    def __init__(
+        self,
+        issuer=None,
+        client_id="client_id_stub",
+        audience="api://default",
+        request_executor=RequestExecutor,
+        max_retries=MAX_RETRIES,
+        request_timeout=REQUEST_TIMEOUT,
+        max_requests=MAX_REQUESTS,
+        leeway=LEEWAY,
+        cache_jwks=True,
+        proxy=None,
+    ):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -36,23 +36,27 @@ class BaseJWTVerifier():
             cache_jwks: bool, optional
         """
         # validate input data before any processing
-        config = {'issuer': issuer,
-                  'client_id': client_id,
-                  'audience': audience,
-                  'max_retries': max_retries,
-                  'request_timeout': request_timeout,
-                  'max_requests': max_requests,
-                  'leeway': leeway,
-                  'cache_jwks': cache_jwks}
+        config = {
+            "issuer": issuer,
+            "client_id": client_id,
+            "audience": audience,
+            "max_retries": max_retries,
+            "request_timeout": request_timeout,
+            "max_requests": max_requests,
+            "leeway": leeway,
+            "cache_jwks": cache_jwks,
+        }
         ConfigValidator(config).validate_config()
 
         self.issuer = issuer
         self.client_id = client_id
         self.audience = audience
-        self.request_executor = request_executor(max_retries=max_retries,
-                                                 max_requests=max_requests,
-                                                 request_timeout=request_timeout,
-                                                 proxy=proxy)
+        self.request_executor = request_executor(
+            max_retries=max_retries,
+            max_requests=max_requests,
+            request_timeout=request_timeout,
+            proxy=proxy,
+        )
         self.max_retries = max_retries
         self.request_timeout = request_timeout
         self.max_requests = max_requests
@@ -67,7 +71,7 @@ class BaseJWTVerifier():
         """
         return JWTUtils.parse_token(token)
 
-    async def verify_access_token(self, token, claims_to_verify=('iss', 'aud', 'exp')):
+    async def verify_access_token(self, token, claims_to_verify=("iss", "aud", "exp")):
         """Verify acess token.
 
         Algorithm:
@@ -86,21 +90,21 @@ class BaseJWTVerifier():
         """
         try:
             headers, claims, signing_input, signature = self.parse_token(token)
-            if headers.get('alg') != 'RS256':
+            if headers.get("alg") != "RS256":
                 raise JWTValidationException('Header claim "alg" is invalid.')
 
-            self.verify_claims(claims,
-                               claims_to_verify=claims_to_verify,
-                               leeway=self.leeway)
+            self.verify_claims(
+                claims, claims_to_verify=claims_to_verify, leeway=self.leeway
+            )
 
-            okta_jwk = await self.get_jwk(headers['kid'])
+            okta_jwk = await self.get_jwk(headers["kid"])
             self.verify_signature(token, okta_jwk)
         except JWTValidationException:
             raise
         except Exception as err:
             raise JWTValidationException(str(err))
 
-    async def verify_id_token(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
+    async def verify_id_token(self, token, claims_to_verify=("iss", "exp"), nonce=None):
         """Verify id token.
 
         Algorithm:
@@ -122,19 +126,19 @@ class BaseJWTVerifier():
         """
         try:
             headers, claims, signing_input, signature = self.parse_token(token)
-            if headers.get('alg') != 'RS256':
+            if headers.get("alg") != "RS256":
                 raise JWTValidationException('Header claim "alg" is invalid.')
 
-            self.verify_claims(claims,
-                               claims_to_verify=claims_to_verify,
-                               leeway=self.leeway)
+            self.verify_claims(
+                claims, claims_to_verify=claims_to_verify, leeway=self.leeway
+            )
 
-            okta_jwk = await self.get_jwk(headers['kid'])
+            okta_jwk = await self.get_jwk(headers["kid"])
             self.verify_signature(token, okta_jwk)
 
             # verify client_id and nonce
-            self.verify_client_id(claims['aud'])
-            if 'nonce' in claims and claims['nonce'] != nonce:
+            self.verify_client_id(claims["aud"])
+            if "nonce" in claims and claims["nonce"] != nonce:
                 raise JWTValidationException('Claim "nonce" is invalid.')
         except JWTValidationException:
             raise
@@ -160,11 +164,9 @@ class BaseJWTVerifier():
 
     def verify_claims(self, claims, claims_to_verify, leeway=LEEWAY):
         """Verify claims are present and valid."""
-        JWTUtils.verify_claims(claims,
-                               claims_to_verify,
-                               self.audience,
-                               self.issuer,
-                               leeway)
+        JWTUtils.verify_claims(
+            claims, claims_to_verify, self.audience, self.issuer, leeway
+        )
 
     def verify_expiration(self, token, leeway=LEEWAY):
         """Verify if token is not expired."""
@@ -177,8 +179,8 @@ class BaseJWTVerifier():
             str if jwk match found, None - otherwise
         """
         okta_jwk = None
-        for key in jwks['keys']:
-            if key['kid'] == kid:
+        for key in jwks["keys"]:
+            if key["kid"] == kid:
                 okta_jwk = key
         return okta_jwk
 
@@ -200,7 +202,7 @@ class BaseJWTVerifier():
             jwks = await self.get_jwks()
             okta_jwk = self._get_jwk_by_kid(jwks, kid)
         if not okta_jwk:
-            raise JWKException('No matching JWK.')
+            raise JWKException("No matching JWK.")
         return okta_jwk
 
     async def get_jwks(self):
@@ -209,8 +211,10 @@ class BaseJWTVerifier():
         version from okta_jwt_verifier.__init__.py
         """
         jwks_uri = self._construct_jwks_uri()
-        headers = {'User-Agent': f'okta-jwt-verifier-python/{version}',
-                   'Content-Type': 'application/json'}
+        headers = {
+            "User-Agent": f"okta-jwt-verifier-python/{version}",
+            "Content-Type": "application/json",
+        }
         jwks = await self.request_executor.get(jwks_uri, headers=headers)
         if not self.cache_jwks:
             self._clear_requests_cache()
@@ -226,11 +230,11 @@ class BaseJWTVerifier():
         Final JWKS URI: {jwks_uri_base}/v1/keys
         """
         jwks_uri_base = self.issuer
-        if not jwks_uri_base.endswith('/'):
-            jwks_uri_base = jwks_uri_base + '/'
-        if '/oauth2/' not in jwks_uri_base:
-            jwks_uri_base = urljoin(jwks_uri_base, 'oauth2/')
-        return urljoin(jwks_uri_base, 'v1/keys')
+        if not jwks_uri_base.endswith("/"):
+            jwks_uri_base = jwks_uri_base + "/"
+        if "/oauth2/" not in jwks_uri_base:
+            jwks_uri_base = urljoin(jwks_uri_base, "oauth2/")
+        return urljoin(jwks_uri_base, "v1/keys")
 
     def _clear_requests_cache(self):
         """Clear whole cache."""
@@ -238,18 +242,19 @@ class BaseJWTVerifier():
 
 
 class JWTVerifier(BaseJWTVerifier):
-
-    def __init__(self,
-                 issuer=None,
-                 client_id='client_id_stub',
-                 audience='api://default',
-                 request_executor=RequestExecutor,
-                 max_retries=MAX_RETRIES,
-                 request_timeout=REQUEST_TIMEOUT,
-                 max_requests=MAX_REQUESTS,
-                 leeway=LEEWAY,
-                 cache_jwks=True,
-                 proxy=None):
+    def __init__(
+        self,
+        issuer=None,
+        client_id="client_id_stub",
+        audience="api://default",
+        request_executor=RequestExecutor,
+        max_retries=MAX_RETRIES,
+        request_timeout=REQUEST_TIMEOUT,
+        max_requests=MAX_REQUESTS,
+        leeway=LEEWAY,
+        cache_jwks=True,
+        proxy=None,
+    ):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -262,33 +267,40 @@ class JWTVerifier(BaseJWTVerifier):
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        warnings.simplefilter('module')
-        warnings.warn('JWTVerifier will be deprecated soon. '
-                      'For token verification use IDTokenVerifier or AccessTokenVerifier. '
-                      'For different jwt utils use JWTUtils.', DeprecationWarning)
-        super().__init__(issuer=issuer,
-                         client_id=client_id,
-                         audience=audience,
-                         request_executor=request_executor,
-                         max_retries=max_retries,
-                         request_timeout=request_timeout,
-                         max_requests=max_requests,
-                         leeway=leeway,
-                         cache_jwks=cache_jwks,
-                         proxy=proxy)
+        warnings.simplefilter("module")
+        warnings.warn(
+            "JWTVerifier will be deprecated soon. "
+            "For token verification use IDTokenVerifier or AccessTokenVerifier. "
+            "For different jwt utils use JWTUtils.",
+            DeprecationWarning,
+        )
+        super().__init__(
+            issuer=issuer,
+            client_id=client_id,
+            audience=audience,
+            request_executor=request_executor,
+            max_retries=max_retries,
+            request_timeout=request_timeout,
+            max_requests=max_requests,
+            leeway=leeway,
+            cache_jwks=cache_jwks,
+            proxy=proxy,
+        )
 
 
-class AccessTokenVerifier():
-    def __init__(self,
-                 issuer=None,
-                 audience='api://default',
-                 request_executor=RequestExecutor,
-                 max_retries=MAX_RETRIES,
-                 request_timeout=REQUEST_TIMEOUT,
-                 max_requests=MAX_REQUESTS,
-                 leeway=LEEWAY,
-                 cache_jwks=True,
-                 proxy=None):
+class AccessTokenVerifier:
+    def __init__(
+        self,
+        issuer=None,
+        audience="api://default",
+        request_executor=RequestExecutor,
+        max_retries=MAX_RETRIES,
+        request_timeout=REQUEST_TIMEOUT,
+        max_requests=MAX_REQUESTS,
+        leeway=LEEWAY,
+        cache_jwks=True,
+        proxy=None,
+    ):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -300,33 +312,37 @@ class AccessTokenVerifier():
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        self._jwt_verifier = BaseJWTVerifier(issuer=issuer,
-                                             client_id='client_id_stub',
-                                             audience=audience,
-                                             request_executor=request_executor,
-                                             max_retries=max_retries,
-                                             request_timeout=request_timeout,
-                                             max_requests=max_requests,
-                                             leeway=leeway,
-                                             cache_jwks=cache_jwks,
-                                             proxy=proxy)
+        self._jwt_verifier = BaseJWTVerifier(
+            issuer=issuer,
+            client_id="client_id_stub",
+            audience=audience,
+            request_executor=request_executor,
+            max_retries=max_retries,
+            request_timeout=request_timeout,
+            max_requests=max_requests,
+            leeway=leeway,
+            cache_jwks=cache_jwks,
+            proxy=proxy,
+        )
 
-    async def verify(self, token, claims_to_verify=('iss', 'aud', 'exp')):
+    async def verify(self, token, claims_to_verify=("iss", "aud", "exp")):
         await self._jwt_verifier.verify_access_token(token, claims_to_verify)
 
 
-class IDTokenVerifier():
-    def __init__(self,
-                 issuer=None,
-                 client_id='client_id_stub',
-                 audience='api://default',
-                 request_executor=RequestExecutor,
-                 max_retries=MAX_RETRIES,
-                 request_timeout=REQUEST_TIMEOUT,
-                 max_requests=MAX_REQUESTS,
-                 leeway=LEEWAY,
-                 cache_jwks=True,
-                 proxy=None):
+class IDTokenVerifier:
+    def __init__(
+        self,
+        issuer=None,
+        client_id="client_id_stub",
+        audience="api://default",
+        request_executor=RequestExecutor,
+        max_retries=MAX_RETRIES,
+        request_timeout=REQUEST_TIMEOUT,
+        max_requests=MAX_REQUESTS,
+        leeway=LEEWAY,
+        cache_jwks=True,
+        proxy=None,
+    ):
         """
         Args:
             issuer: string, full URI of the token issuer, required
@@ -339,16 +355,18 @@ class IDTokenVerifier():
             leeway: int, amount of time to expand the window for token expiration (to work around clock skew)
             cache_jwks: bool, optional
         """
-        self._jwt_verifier = BaseJWTVerifier(issuer,
-                                             client_id,
-                                             audience,
-                                             request_executor,
-                                             max_retries,
-                                             request_timeout,
-                                             max_requests,
-                                             leeway,
-                                             cache_jwks,
-                                             proxy)
+        self._jwt_verifier = BaseJWTVerifier(
+            issuer,
+            client_id,
+            audience,
+            request_executor,
+            max_retries,
+            request_timeout,
+            max_requests,
+            leeway,
+            cache_jwks,
+            proxy,
+        )
 
-    async def verify(self, token, claims_to_verify=('iss', 'exp'), nonce=None):
+    async def verify(self, token, claims_to_verify=("iss", "exp"), nonce=None):
         await self._jwt_verifier.verify_id_token(token, claims_to_verify, nonce)
