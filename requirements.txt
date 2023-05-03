@@ -1,4 +1,4 @@
 requests
 python-jose>=3.2.0
 acachecontrol>=0.2.1
-retry
+retry2

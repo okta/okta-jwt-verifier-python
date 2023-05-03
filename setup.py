@@ -39,6 +39,6 @@ setup(
         "acachecontrol",
         "aiohttp",
         "python-jose",
-        "retry"
+        "retry2"
     ]
 )
