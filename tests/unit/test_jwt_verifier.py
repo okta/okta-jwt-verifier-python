@@ -117,30 +117,30 @@ def test_verify_signature(mocker):
 
 def test_verify_client_id():
     """Check if method verify_client_id works correctly."""
-    # verify when aud is a string
+    # verify when cid is a string
     client_id = 'test_client_id'
-    aud = client_id
+    cid = client_id
     jwt_verifier = BaseJWTVerifier('https://test_issuer.com', client_id)
-    jwt_verifier.verify_client_id(aud)
+    jwt_verifier.verify_client_id(cid)
 
-    # verify when aud is an array
-    aud = ['test_audience', client_id]
-    jwt_verifier.verify_client_id(aud)
+    # verify when cid is an array
+    cid = ['test_cid', client_id]
+    jwt_verifier.verify_client_id(cid)
 
-    # verify exception is raised when aud is a string
+    # verify exception is raised when cid is a string
     with pytest.raises(JWTValidationException):
-        aud = 'bad_aud'
-        jwt_verifier.verify_client_id(aud)
+        cid = 'bad_cid'
+        jwt_verifier.verify_client_id(cid)
 
-    # verify exception is raised when aud is an array
+    # verify exception is raised when cid is an array
     with pytest.raises(JWTValidationException):
-        aud = ['bad_aud']
-        jwt_verifier.verify_client_id(aud)
+        cid = ['bad_cid']
+        jwt_verifier.verify_client_id(cid)
 
-    # verify exception is raised when aud is not a string or array
+    # verify exception is raised when cid is not a string or array
     with pytest.raises(JWTValidationException):
-        aud = {'aud': 'bad_aud'}
-        jwt_verifier.verify_client_id(aud)
+        cid = {'cid': 'bad_cid'}
+        jwt_verifier.verify_client_id(cid)
 
 
 def test_verify_claims():
