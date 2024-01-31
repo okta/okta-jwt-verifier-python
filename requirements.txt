@@ -1,4 +1,7 @@
-requests
+requests>=2.31.0
 python-jose>=3.2.0
-acachecontrol>=0.2.1
+acachecontrol>=0.3.5
 retry2
+aiohttp>=3.9.2
+certifi>=2023.7.22
+urllib3>=1.26.18
