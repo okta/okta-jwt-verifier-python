@@ -5,17 +5,20 @@ from acachecontrol import AsyncCacheControl
 from acachecontrol.cache import AsyncCache
 from retry.api import retry_call
 
-from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT
+from .constants import MAX_REQUESTS, MAX_RETRIES, REQUEST_TIMEOUT
 
 
 class RequestExecutor:
     """Wrapper around HTTP API requests."""
-    def __init__(self,
-                 max_retries=MAX_RETRIES,
-                 max_requests=MAX_REQUESTS,
-                 request_timeout=REQUEST_TIMEOUT,
-                 cache_controller=AsyncCache(),
-                 proxy=None):
+
+    def __init__(
+        self,
+        max_retries=MAX_RETRIES,
+        max_requests=MAX_REQUESTS,
+        request_timeout=REQUEST_TIMEOUT,
+        cache_controller=AsyncCache(),
+        proxy=None,
+    ):
         self.cache = cache_controller
         self.max_retries = max_retries
         self.max_requests = max_requests
@@ -38,18 +41,22 @@ class RequestExecutor:
 
         Return response in json-format.
         """
-        request_params = {'headers': params.get('headers'),
-                          'timeout': self.request_timeout}
+        request_params = {
+            "headers": params.get("headers"),
+            "timeout": self.request_timeout,
+        }
         if self.proxy:
-            request_params['proxy'] = self.proxy
+            request_params["proxy"] = self.proxy
 
         while self.requests_count >= self.max_requests:
             time.sleep(0.1)
         self.requests_count += 1
-        response = retry_call(self.fire_request,
-                              fargs=(uri,),
-                              fkwargs=request_params,
-                              tries=self.max_retries)
+        response = retry_call(
+            self.fire_request,
+            fargs=(uri,),
+            fkwargs=request_params,
+            tries=self.max_retries,
+        )
         self.requests_count -= 1
         return response
 
