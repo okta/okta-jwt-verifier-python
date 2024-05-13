@@ -55,11 +55,12 @@ class JWTUtils:
     def verify_signature(token, okta_jwk):
         """Verify token signature using received jwk."""
         headers, claims, signing_input, signature = JWTUtils.parse_token(token)
+        parsed_jwk = jwt.PyJWK(okta_jwk)
         jws_api = jwt.api_jws.PyJWS()
         jws_api._verify_signature(signing_input=signing_input,
                               header=headers,
                               signature=signature,
-                              key=okta_jwk,
+                              key=parsed_jwk.key,
                               algorithms=['RS256'])
 
     @staticmethod
