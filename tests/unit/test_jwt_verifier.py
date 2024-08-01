@@ -7,6 +7,8 @@ from okta_jwt_verifier import BaseJWTVerifier, JWTVerifier, AccessTokenVerifier,
 from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
 from okta_jwt_verifier.request_executor import RequestExecutor
 
+from cryptography.hazmat.primitives.asymmetric import rsa
+
 
 class MockRequestExecutor(RequestExecutor):
 
@@ -105,14 +107,31 @@ def test_verify_signature(mocker):
                  mock_sign_verifier)
 
     token = 'test_token'
-    jwk = 'test_jwk'
+    jwk = {
+        "kty": "RSA",
+        "e": "AQAB",
+        "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx...",
+        "kid": "test_kid"
+        }
     jwt_verifier = BaseJWTVerifier('https://test_issuer.com', 'test_client_id')
     jwt_verifier.verify_signature(token, jwk)
-    mock_sign_verifier.assert_called_with(signing_input=signing_input,
-                                          header=headers,
-                                          signature=signature,
-                                          key=jwk,
-                                          algorithms=['RS256'])
+
+    mock_sign_verifier.assert_called_once()  # Check if called once
+    args, kwargs = mock_sign_verifier.call_args  # Get the arguments
+
+    assert kwargs['signing_input'] == signing_input
+    assert kwargs['header'] == headers
+    assert kwargs['signature'] == signature
+    assert kwargs['algorithms'] == ['RS256']
+
+    assert isinstance(kwargs['key'], rsa.RSAPublicKey)
+
+
+    # mock_sign_verifier.assert_called_with(signing_input=signing_input,
+    #                                       header=headers,
+    #                                       signature=signature,
+    #                                       key=jwk,
+    #                                       algorithms=['RS256'])
 
 
 def test_verify_client_id():
