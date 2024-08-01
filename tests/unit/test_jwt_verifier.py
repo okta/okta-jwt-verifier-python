@@ -1,7 +1,7 @@
 import pytest
 import time
 
-from jose.exceptions import JWTClaimsError
+from jwt.exceptions import InvalidTokenError
 
 from okta_jwt_verifier import BaseJWTVerifier, JWTVerifier, AccessTokenVerifier, IDTokenVerifier
 from okta_jwt_verifier.exceptions import JWKException, JWTValidationException
@@ -101,7 +101,7 @@ def test_verify_signature(mocker):
     mocker.patch('okta_jwt_verifier.jwt_utils.JWTUtils.parse_token', mock_parse_token)
 
     mock_sign_verifier = mocker.Mock()
-    mocker.patch('okta_jwt_verifier.jwt_utils.jws._verify_signature',
+    mocker.patch('okta_jwt_verifier.jwt_utils.jwt.api_jws.PyJWS._verify_signature',
                  mock_sign_verifier)
 
     token = 'test_token'
@@ -184,7 +184,7 @@ def test_verify_claims_invalid():
               'sub': 'test_jwt@okta.com'}
     # verify when aud is a string
     jwt_verifier = BaseJWTVerifier(issuer, client_id)
-    with pytest.raises(JWTClaimsError):
+    with pytest.raises(InvalidTokenError):
         jwt_verifier.verify_claims(claims, ('iss', 'aud', 'exp'))
 
 

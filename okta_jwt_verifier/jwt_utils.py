@@ -1,7 +1,8 @@
 import json
 
-from jose import jwt, jws
-from jose.exceptions import ExpiredSignatureError
+import jwt
+from jwt.exceptions import ExpiredSignatureError
+
 
 from .constants import LEEWAY
 from .exceptions import JWTValidationException
@@ -17,7 +18,8 @@ class JWTUtils:
         Return:
             tuple (headers, claims, signing_input, signature)
         """
-        headers, payload, signing_input, signature = jws._load(token)
+        jws_api = jwt.api_jws.PyJWS()
+        payload, signing_input, headers, signature = jws_api._load(token)
         claims = json.loads(payload.decode('utf-8'))
         return (headers, claims, signing_input, signature)
 
@@ -28,7 +30,8 @@ class JWTUtils:
                       issuer,
                       leeway=LEEWAY):
         """Verify claims are present and valid."""
-        # Check if required claims are present, because library "jose" doesn't raise an exception
+        # Check if required claims are present
+        # This may not be required with the `pyjwt` implementation.
         for claim in claims_to_verify:
             if claim not in claims:
                 raise JWTValidationException(f'Required claim "{claim}" is not present.')
@@ -41,21 +44,23 @@ class JWTUtils:
                    'verify_iss': 'iss' in claims_to_verify,
                    'verify_sub': 'sub' in claims_to_verify,
                    'verify_jti': 'jti' in claims_to_verify,
-                   'leeway': leeway}
+                   'require': claims_to_verify,
+                   'leeway': leeway,
+                   'verify_signature': False,}
         # Validate claims
-        jwt._validate_claims(claims,
-                             audience=audience,
-                             issuer=issuer,
-                             options=options)
+        jwt_api = jwt.api_jwt.PyJWT()
+        jwt_api._validate_claims(payload=claims, options=options, audience=audience, issuer=issuer, leeway=leeway)
 
     @staticmethod
     def verify_signature(token, okta_jwk):
         """Verify token signature using received jwk."""
         headers, claims, signing_input, signature = JWTUtils.parse_token(token)
-        jws._verify_signature(signing_input=signing_input,
+        parsed_jwk = jwt.PyJWK(okta_jwk)
+        jws_api = jwt.api_jws.PyJWS()
+        jws_api._verify_signature(signing_input=signing_input,
                               header=headers,
                               signature=signature,
-                              key=okta_jwk,
+                              key=parsed_jwk.key,
                               algorithms=['RS256'])
 
     @staticmethod
