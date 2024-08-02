@@ -35,10 +35,5 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=[
-        "acachecontrol",
-        "aiohttp",
-        "python-jose",
-        "retry2"
-    ]
+    install_requires=["acachecontrol", "aiohttp", "retry2"],
 )

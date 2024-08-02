@@ -35,8 +35,8 @@ class JWTUtils:
         for claim in claims_to_verify:
             if claim not in claims:
                 raise JWTValidationException(f'Required claim "{claim}" is not present.')
-
-        # Overwrite defaults in python-jose library
+                
+        # Overwrite defaults in pyjwt library
         options = {'verify_aud': 'aud' in claims_to_verify,
                    'verify_iat': 'iat' in claims_to_verify,
                    'verify_exp': 'exp' in claims_to_verify,
@@ -47,6 +47,7 @@ class JWTUtils:
                    'require': claims_to_verify,
                    'leeway': leeway,
                    'verify_signature': False,}
+        
         # Validate claims
         jwt_api = jwt.api_jwt.PyJWT()
         jwt_api._validate_claims(payload=claims, options=options, audience=audience, issuer=issuer, leeway=leeway)
