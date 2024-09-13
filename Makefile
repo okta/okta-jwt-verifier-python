@@ -28,7 +28,7 @@ help:
 
 
 build\:dist:
-	python3 setup.py sdist bdist_wheel
+	poetry build
 
 publish\:test:
 	python3 -m twine upload --repository testpypi dist/*
