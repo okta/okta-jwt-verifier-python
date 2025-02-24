@@ -1,6 +1,6 @@
 requests>=2.31.0
 pyjwt>=2.8.0
-acachecontrol>=0.3.5
+acachecontrol>=0.3.6
 retry2
 aiohttp>=3.9.2
 certifi>=2023.7.22
