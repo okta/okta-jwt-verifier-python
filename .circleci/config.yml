@@ -8,7 +8,6 @@ orbs:
   aws-cli: circleci/aws-cli@5.1
 
 jobs:
-
   build:
     docker:
       - image: cimg/python:3.10
@@ -25,9 +24,9 @@ jobs:
             - .
 
 workflows:
-
   "Malware Scanner":
     jobs:
+      - build
       - platform-helpers/job-reversinglabs-scan:
           context:
             - static-analysis
