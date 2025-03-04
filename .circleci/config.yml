@@ -27,9 +27,7 @@ workflows:
   "Malware Scanner":
     jobs:
       - build:
-          name: Build Package
       - platform-helpers/job-reversinglabs-scan:
-          name: Reversing Labs Scan
           context:
             - static-analysis
           requires:
