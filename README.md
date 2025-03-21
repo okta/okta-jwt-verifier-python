@@ -17,6 +17,7 @@ This library helps you verify tokens that have been issued by Okta. To learn mor
 
 > Requires Python version 3.6.0 or higher.
 
+
 ## Release status
 
 This library uses semantic versioning and follows Okta's [Library Version Policy][okta-library-versioning].
