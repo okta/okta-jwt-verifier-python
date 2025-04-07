@@ -211,7 +211,13 @@ class BaseJWTVerifier():
         jwks_uri = self._construct_jwks_uri()
         headers = {'User-Agent': f'okta-jwt-verifier-python/{version}',
                    'Content-Type': 'application/json'}
-        jwks = await self.request_executor.get(jwks_uri, headers=headers)
+        try:
+            jwks = await self.request_executor.get(jwks_uri, headers=headers)
+        except Exception as e: # This is needed if the http client fails
+            print('String e: '+ str(e))
+            self.request_executor.cache.release_new_key(('GET', jwks_uri))
+            self._clear_requests_cache()
+
         if not self.cache_jwks:
             self._clear_requests_cache()
         return jwks
