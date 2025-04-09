@@ -1,5 +1,8 @@
 # OKTA JWT Verifier Changelog
 
+## v0.2.8
+- Updated version of setuptools to 70.0.0
+
 ## v0.2.3
 - Verify claims before signature, issue #34
 
