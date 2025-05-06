@@ -1,5 +1,8 @@
 # OKTA JWT Verifier Changelog
 
+## v0.2.9
+- Updated version of setuptools to 78.1.1
+
 ## v0.2.8
 - Updated version of setuptools to 70.0.0
 
