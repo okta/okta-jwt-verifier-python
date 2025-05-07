@@ -2,7 +2,7 @@
 
 Allow to verify JWT locally
 """
-__version__ = '0.2.8'
+__version__ = '0.2.9'
 
 from .jwt_verifier import BaseJWTVerifier, JWTVerifier, AccessTokenVerifier, IDTokenVerifier # noqa
 from .jwt_utils import JWTUtils # noqa
