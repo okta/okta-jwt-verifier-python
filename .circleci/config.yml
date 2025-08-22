@@ -22,11 +22,27 @@ jobs:
           root: .
           paths:
             - .
-
+  snyk-scan:
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - attach_workspace: # Allows for sharing of build-workspace (containing downloaded dependencies) (optional)
+          at: ~/project # This is the working directory for CCI containers, change if necessary
+      - checkout # Might not need this if you have "persist_to_workspace" and "attach_workspace"
+      - run: |   # Might not need this if you have "persist_to_workspace" and "attach_workspace"
+          pip install -r requirements.txt
+      - platform-helpers-general/step-run-snyk-monitor:
+          scan-all-projects: true
+          skip-unresolved: false
+          run-on-non-main: true
 workflows:
   "Malware Scanner":
     jobs:
       - build
+      - snyk-scan:
+          context:
+            - static-analysis
+          name: execute-snyk
       - platform-helpers/job-reversinglabs-scan:
           context:
             - static-analysis
