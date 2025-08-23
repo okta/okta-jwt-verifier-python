@@ -48,11 +48,8 @@ workflows:
             - build
       - snyk-scan:
           name: execute-snyk
-          requires:
-            - prepare-snyk
           filters:
             branches:
               only:
                 - master
                 - main
-                - Integrate-Snyk-SAST-Scans
