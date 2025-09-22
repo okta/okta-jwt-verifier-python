@@ -1,5 +1,8 @@
 # OKTA JWT Verifier Changelog
 
+## v0.3.0
+- Updated version of aiohttp to 3.12.14
+
 ## v0.2.9
 - Updated version of setuptools to 78.1.1
 

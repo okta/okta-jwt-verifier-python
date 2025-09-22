@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "okta-jwt-verifier"
-version = "0.2.9"
+version = "0.3.0"
 description = "A Python library for OKTA JWT tokens validation"
 authors = ["Okta"]
 license = "Apache-2.0"
