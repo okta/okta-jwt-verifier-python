@@ -48,6 +48,8 @@ workflows:
             - build
       - snyk-scan:
           name: execute-snyk
+          context:
+            - static-analysis
           filters:
             branches:
               only:
