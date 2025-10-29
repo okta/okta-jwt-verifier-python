@@ -133,7 +133,8 @@ class BaseJWTVerifier():
             self.verify_signature(token, okta_jwk)
 
             # verify client_id and nonce
-            self.verify_client_id(claims['aud'])
+            if self.client_id:
+                self.verify_client_id(claims['cid'])
             if 'nonce' in claims and claims['nonce'] != nonce:
                 raise JWTValidationException('Claim "nonce" is invalid.')
         except JWTValidationException:
@@ -141,18 +142,18 @@ class BaseJWTVerifier():
         except Exception as err:
             raise JWTValidationException(str(err))
 
-    def verify_client_id(self, aud):
-        """Verify client_id match aud or one of its elements."""
-        if isinstance(aud, str):
-            if aud != self.client_id:
-                raise JWTValidationException('Claim "aud" does not match Client ID.')
-        elif isinstance(aud, list):
-            for elem in aud:
+    def verify_client_id(self, cid):
+        """Verify client_id match cid or one of its elements."""
+        if isinstance(cid, str):
+            if cid != self.client_id:
+                raise JWTValidationException('Claim "cid" does not match Client ID.')
+        elif isinstance(cid, list):
+            for elem in cid:
                 if elem == self.client_id:
                     return
-            raise JWTValidationException('Claim "aud" does not contain Client ID.')
+            raise JWTValidationException('Claim "cid" does not contain Client ID.')
         else:
-            raise JWTValidationException('Claim "aud" has unsupported format.')
+            raise JWTValidationException('Claim "cid" has unsupported format.')
 
     def verify_signature(self, token, okta_jwk):
         """Verify token signature using received jwk."""
@@ -282,6 +283,7 @@ class AccessTokenVerifier():
     def __init__(self,
                  issuer=None,
                  audience='api://default',
+                 client_id='client_id_stub',
                  request_executor=RequestExecutor,
                  max_retries=MAX_RETRIES,
                  request_timeout=REQUEST_TIMEOUT,
@@ -301,7 +303,7 @@ class AccessTokenVerifier():
             cache_jwks: bool, optional
         """
         self._jwt_verifier = BaseJWTVerifier(issuer=issuer,
-                                             client_id='client_id_stub',
+                                             client_id=client_id,
                                              audience=audience,
                                              request_executor=request_executor,
                                              max_retries=max_retries,
