@@ -1,15 +1,15 @@
 """Module contains tools to perform http requests."""
-import time
+import asyncio
 
 from acachecontrol import AsyncCacheControl
 from acachecontrol.cache import AsyncCache
-from retry.api import retry_call
 
 from .constants import MAX_RETRIES, MAX_REQUESTS, REQUEST_TIMEOUT
 
 
 class RequestExecutor:
     """Wrapper around HTTP API requests."""
+
     def __init__(self,
                  max_retries=MAX_RETRIES,
                  max_requests=MAX_REQUESTS,
@@ -33,7 +33,7 @@ class RequestExecutor:
                 resp_json = await resp.json()
         return resp_json
 
-    def get(self, uri, **params):
+    async def get(self, uri, **params):
         """Perform http(s) GET request with retry.
 
         Return response in json-format.
@@ -44,14 +44,21 @@ class RequestExecutor:
             request_params['proxy'] = self.proxy
 
         while self.requests_count >= self.max_requests:
-            time.sleep(0.1)
+            await asyncio.sleep(0.1)
+
         self.requests_count += 1
-        response = retry_call(self.fire_request,
-                              fargs=(uri,),
-                              fkwargs=request_params,
-                              tries=self.max_retries)
-        self.requests_count -= 1
-        return response
+        try:
+            last_error = None
+            for attempt in range(self.max_retries):
+                try:
+                    return await self.fire_request(uri, **request_params)
+                except Exception as e:
+                    last_error = e
+                    if attempt < self.max_retries - 1:
+                        await asyncio.sleep(0.5 * (2 ** attempt))
+            raise last_error
+        finally:
+            self.requests_count -= 1
 
     def clear_cache(self):
         """Remove all cached data from all adapters in cached session."""
