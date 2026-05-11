@@ -46,7 +46,7 @@ class JWTUtils:
                    'verify_jti': 'jti' in claims_to_verify,
                    'require': claims_to_verify,
                    'leeway': leeway,
-                   'verify_signature': False,}
+                   'verify_signature': False}
         # Validate claims
         jwt_api = jwt.api_jwt.PyJWT()
         jwt_api._validate_claims(payload=claims, options=options, audience=audience, issuer=issuer, leeway=leeway)
@@ -58,10 +58,10 @@ class JWTUtils:
         parsed_jwk = jwt.PyJWK(okta_jwk)
         jws_api = jwt.api_jws.PyJWS()
         jws_api._verify_signature(signing_input=signing_input,
-                              header=headers,
-                              signature=signature,
-                              key=parsed_jwk.key,
-                              algorithms=['RS256'])
+                                  header=headers,
+                                  signature=signature,
+                                  key=parsed_jwk.key,
+                                  algorithms=['RS256'])
 
     @staticmethod
     def verify_expiration(token, leeway=LEEWAY):
