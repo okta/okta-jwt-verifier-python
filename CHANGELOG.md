@@ -1,5 +1,26 @@
 # OKTA JWT Verifier Changelog
 
+## v0.5.0
+_New features:_
+- Add synchronous `verify_sync()` method to `AccessTokenVerifier` and `IDTokenVerifier` for non-async applications (e.g. Django, Flask)
+- Add sync verification methods to `BaseJWTVerifier`: `verify_access_token_sync()`, `verify_id_token_sync()`, `get_jwk_sync()`, `get_jwks_sync()`
+- Add sync HTTP support in `RequestExecutor`: `fire_request_sync()`, `get_sync()` using the `requests` library
+
+_Improvements:_
+- Extract shared validation logic into `_verify_token_common()` to reduce code duplication across verify methods
+- Simplify `_get_jwk_by_kid()` with early return pattern
+- Fix `get_jwks()` silently swallowing exceptions on HTTP failure (now re-raises after cleanup)
+- Ensure `clear_cache()` clears both async and sync caches
+- Add `try/finally` to request throttling to guarantee counter cleanup on exceptions
+
+_Code quality:_
+- Fix docstring typo: `"acess"` → `"access"`
+- Fix incorrect return type documentation: `str` → `dict` for JWK methods
+- Add RFC 7519, 7515, 7517 references to docstrings
+- Remove empty parentheses on classes with no base class (PEP 8)
+
+_Backward compatible:_ All existing async APIs remain unchanged. No breaking changes.
+
 ## v0.4.0
 - Added support to clear cache if http client fails
 
