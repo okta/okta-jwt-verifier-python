@@ -9,8 +9,14 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 PyJWT = "^2.8.0"
-acachecontrol = "^0.3.6"
 retry2 = "^0.9.5"
+# The only HTTP client, used by both the sync and async paths. It was imported
+# unconditionally by request_executor but declared only in requirements.txt,
+# not here — and pip installs from this metadata, so `import okta_jwt_verifier`
+# raised ModuleNotFoundError for any project that did not already depend on it
+# (#95). This replaces acachecontrol/aiohttp entirely; see the comment at the
+# top of request_executor.py for why an async client was not viable.
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
 cryptography = ">=43.0.0"

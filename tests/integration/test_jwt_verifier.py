@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from acachecontrol.cache import AsyncCache
+from okta_jwt_verifier.async_cache import AsyncCache
 
 from okta_jwt_verifier import BaseJWTVerifier
 from okta_jwt_verifier.request_executor import RequestExecutor
